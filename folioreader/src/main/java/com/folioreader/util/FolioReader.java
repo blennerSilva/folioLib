@@ -12,6 +12,7 @@ import com.folioreader.model.HighLight;
 import com.folioreader.model.HighlightImpl;
 import com.folioreader.model.event.ChangeFontEvent;
 import com.folioreader.model.event.ChangeThemeEvent;
+import com.folioreader.model.event.OpenTOC;
 import com.folioreader.model.sqlite.DbAdapter;
 import com.folioreader.ui.base.OnSaveHighlight;
 import com.folioreader.ui.base.SaveReceivedHighlightTask;
@@ -164,5 +165,8 @@ public class FolioReader {
         return AppUtil.getCurrentPage();
     }
 
+    public void openTOC(Class aClass) {
+        EventBus.getDefault().post(new OpenTOC(aClass));
+    }
 
 }

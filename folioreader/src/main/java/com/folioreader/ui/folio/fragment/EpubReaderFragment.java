@@ -28,6 +28,7 @@ import com.folioreader.model.event.AnchorIdEvent;
 import com.folioreader.model.event.GoToChapterEvent;
 import com.folioreader.model.event.JumpToAnchorPoint;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
+import com.folioreader.model.event.OpenTOC;
 import com.folioreader.model.event.WebViewPosition;
 import com.folioreader.ui.folio.activity.ContentHighlightActivity;
 import com.folioreader.ui.folio.adapter.FolioPageFragmentAdapter;
@@ -383,19 +384,13 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onGoToChapterEvent(GoToChapterEvent goToChapterEvent) {
-        String selectedChapterHref = goToChapterEvent.getSelectedChapterPosition();
-        for (Link spine : mSpineReferenceList) {
-            if (selectedChapterHref.contains(spine.href)) {
-                mChapterPosition = mSpineReferenceList.indexOf(spine);
-                mFolioPageViewPager.setCurrentItem(mChapterPosition);
-                title.setText(goToChapterEvent.getBookTitle());
-                EventBus.getDefault().postSticky(new JumpToAnchorPoint(selectedChapterHref));
-                EventBus.getDefault().removeStickyEvent(goToChapterEvent);
-                break;
-            }
-        }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onOpenTOC(OpenTOC openTOC) {
+        Intent intent = new Intent(getActivity(), openTOC.getaClass());
+        intent.putExtra(CHAPTER_SELECTED, mSpineReferenceList.get(mChapterPosition).href);
+        intent.putExtra(FolioReader.INTENT_BOOK_ID, mBookId);
+        intent.putExtra(Constants.BOOK_TITLE, bookFileName);
+        startActivityForResult(intent, ACTION_CONTENT_HIGHLIGHT);
     }
 
     @Override

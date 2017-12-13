@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.folioreader.model.event.GetTOC;
 import com.folioreader.util.FolioReader;
 
 import org.greenrobot.eventbus.EventBus;
