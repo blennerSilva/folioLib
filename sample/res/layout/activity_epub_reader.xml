@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/containerEpub"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_centerInParent="true">
+
+    <Button
+        android:id="@+id/btnfontsinze"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:text="A" />
+
+    <Button
+        android:id="@+id/btnfontsinzeMinus"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="60dp"
+        android:text="-A" />
+
+    <Button
+        android:id="@+id/btnTemaDay"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="120dp"
+        android:text="Day" />
+
+    <Button
+        android:id="@+id/btnTemaNight"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="180dp"
+        android:text="Night" />
+
+    <Button
+        android:id="@+id/btnCurrentPage"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="240dp"
+        android:text="Current" />
+</RelativeLayout>
