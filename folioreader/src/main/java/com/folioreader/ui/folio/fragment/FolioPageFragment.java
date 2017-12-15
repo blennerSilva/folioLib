@@ -27,13 +27,12 @@ import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.bossturban.webviewmarker.TextSelectionSupport;
+import com.awesomedialog.blennersilva.awesomedialoglibrary.AwesomeProgressDialog;
 import com.folioreader.Config;
 import com.folioreader.Constants;
 import com.folioreader.R;
@@ -45,11 +44,10 @@ import com.folioreader.model.event.JumpToAnchorPoint;
 import com.folioreader.model.event.MediaOverlayHighlightStyleEvent;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.MediaOverlaySpeedEvent;
+import com.folioreader.model.event.PopulateTOCItems;
 import com.folioreader.model.event.ReloadDataEvent;
 import com.folioreader.model.event.RewindIndexEvent;
 import com.folioreader.model.event.WebViewPosition;
-import com.folioreader.model.quickaction.ActionItem;
-import com.folioreader.model.quickaction.QuickAction;
 import com.folioreader.model.sqlite.HighLightTable;
 import com.folioreader.ui.base.HtmlTask;
 import com.folioreader.ui.base.HtmlTaskCallback;
@@ -112,6 +110,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private String rangy = "";
     private String highlightId;
     private boolean mIsNightMode = false;
+    private AwesomeProgressDialog awesomeProgressDialog;
 
     public interface FolioPageFragmentCallback {
 
@@ -126,7 +125,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
     private VerticalSeekbar mScrollSeekbar;
     private HorizontalWebView mWebview;
-    private TextSelectionSupport mTextSelectionSupport;
     private TextView mPagesLeftTextView, mMinutesLeftTextView;
     private FolioPageFragmentCallback mActivityCallback;
     private EpubReaderFragment epubReaderFragment;
@@ -149,11 +147,10 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private MediaController mediaController;
     private Config mConfig;
     private String mBookId;
-    private RelativeLayout mContainer;
+    private static boolean isFirstDialog;
 
     public void setEpubReaderFragment(EpubReaderFragment epubReaderFragment) {
         this.epubReaderFragment = epubReaderFragment;
-        //AppUtil.setEpubReaderFragment(epubReaderFragment);
     }
 
     public static FolioPageFragment newInstance(int position, String bookTitle, Link spineRef, String bookId, EpubReaderFragment epubReaderFragment) {
@@ -171,8 +168,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if ((savedInstanceState != null)
                 && savedInstanceState.containsKey(KEY_FRAGMENT_FOLIO_POSITION)
                 && savedInstanceState.containsKey(KEY_FRAGMENT_FOLIO_BOOK_TITLE)) {
@@ -197,10 +193,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 mediaController.setTextToSpeech(getActivity());
             }
         }
+
         highlightStyle = HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.Normal);
         mRootView = View.inflate(getActivity(), R.layout.folio_page_fragment, null);
         mPagesLeftTextView = (TextView) mRootView.findViewById(R.id.pagesLeft);
         mMinutesLeftTextView = (TextView) mRootView.findViewById(R.id.minutesLeft);
+        awesomeProgressDialog = new AwesomeProgressDialog(getActivity());
 
         Activity activity = getActivity();
 
@@ -231,8 +229,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         float percentWebview = (currentScrollPosition - positionTopView) / contentHeight;
         float webviewsize = mWebview.getContentHeight() - mWebview.getTop();
         float positionInWV = webviewsize * percentWebview;
-        int positionY = Math.round(mWebview.getTop() + positionInWV);
-        mScrollY = positionY;
+        mScrollY = Math.round(mWebview.getTop() + positionInWV);
     }
 
     @SuppressWarnings("unused")
@@ -306,13 +303,16 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     public void themeChoice(ChangeThemeEvent changeThemeEvent) {
         switch (changeThemeEvent.getTheme()) {
             case DAY_THEME:
-                toggleBlackTheme();
+                if (mIsNightMode) {
+                    mIsNightMode = true;
+                    toggleBlackTheme();
+                }
                 break;
             case NIGHT_THEME:
-                toggleBlackTheme();
-                break;
-            default:
-                break;
+                if (!mIsNightMode) {
+                    mIsNightMode = false;
+                    toggleBlackTheme();
+                }
         }
     }
 
@@ -344,10 +344,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 mIsNightMode = !mIsNightMode;
                 mConfig.setNightMode(mIsNightMode);
                 AppUtil.saveConfig(getActivity(), mConfig);
-
                 EventBus.getDefault().post(new ReloadDataEvent());
-
-                ///mConfigDialogCallback.onConfigChange();
             }
 
             @Override
@@ -401,7 +398,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         mWebview = (HorizontalWebView) mRootView.findViewById(R.id.contentWebView);
         mWebview.setFragment(epubReaderFragment);
         mWebview.setVerticalScrollBarEnabled(false);
-
+        mWebview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
 
         if (getActivity() instanceof HorizontalWebView.ToolBarListener)
             mWebview.setToolBarListener((HorizontalWebView.ToolBarListener) getActivity());
@@ -468,6 +465,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     }
 
                     scrollToHighlightId();
+                    EventBus.getDefault().post(new PopulateTOCItems());
                 }
             }
 
@@ -484,14 +482,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                                 double top = Double.parseDouble(matcher.group(2));
                                 double width = Double.parseDouble(matcher.group(3));
                                 double height = Double.parseDouble(matcher.group(4));
-                                onHighlight((int) (UiUtil.convertDpToPixel((float) left,
-                                        getActivity())),
-                                        (int) (UiUtil.convertDpToPixel((float) top,
-                                                getActivity())),
-                                        (int) (UiUtil.convertDpToPixel((float) width,
-                                                getActivity())),
-                                        (int) (UiUtil.convertDpToPixel((float) height,
-                                                getActivity())));
                             }
                         } catch (UnsupportedEncodingException e) {
                             Log.d(TAG, e.getMessage());
@@ -508,6 +498,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         }
                     }
                 }
+
                 return true;
             }
 
@@ -553,6 +544,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         }
                     }, 100);
                 }
+
             }
 
             @Override
@@ -566,7 +558,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         if (HighLightTable.deleteHighlight(message)) {
                             String rangy = HighlightUtil.generateRangyString(getPageName());
                             loadRangy(view, rangy);
-                            mTextSelectionSupport.endSelectionMode();
                             if (highlightImpl != null) {
                                 HighlightUtil.sendHighlightBroadcastEvent(
                                         FolioPageFragment.this.getActivity().getApplicationContext(),
@@ -584,14 +575,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                             double top = Double.parseDouble(matcher.group(2));
                             double width = Double.parseDouble(matcher.group(3));
                             double height = Double.parseDouble(matcher.group(4));
-                            showTextSelectionMenu((int) (UiUtil.convertDpToPixel((float) left,
-                                    getActivity())),
-                                    (int) (UiUtil.convertDpToPixel((float) top,
-                                            getActivity())),
-                                    (int) (UiUtil.convertDpToPixel((float) width,
-                                            getActivity())),
-                                    (int) (UiUtil.convertDpToPixel((float) height,
-                                            getActivity())));
                         } else {
                             // to handle TTS playback when highlight is deleted.
                             Pattern p = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}");
@@ -603,29 +586,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     result.confirm();
                 }
                 return true;
-            }
-        });
-
-        mTextSelectionSupport = TextSelectionSupport.support(getActivity(), mWebview);
-        mTextSelectionSupport.setSelectionListener(new TextSelectionSupport.SelectionListener() {
-            @Override
-            public void startSelection() {
-            }
-
-            @Override
-            public void selectionChanged(String text) {
-                mSelectedText = text;
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mWebview.loadUrl("javascript:alert(getRectForSelectedText())");
-                    }
-                });
-            }
-
-            @Override
-            public void endSelection() {
-
             }
         });
 
@@ -751,8 +711,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     public void onDestroyView() {
         mFadeInAnimation.setAnimationListener(null);
         mFadeOutAnimation.setAnimationListener(null);
-
-
         super.onDestroyView();
     }
 
@@ -775,167 +733,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
     public void highlightRemove() {
         mWebview.loadUrl("javascript:alert(removeThisHighlight())");
-    }
-
-    public void showTextSelectionMenu(int x, int y, final int width, final int height) {
-        final ViewGroup root =
-                (ViewGroup) getActivity().getWindow()
-                        .getDecorView().findViewById(android.R.id.content);
-        final View view = new View(getActivity());
-        view.setLayoutParams(new ViewGroup.LayoutParams(width, height));
-        view.setBackgroundColor(Color.TRANSPARENT);
-
-        root.addView(view);
-
-        view.setX(x);
-        view.setY(y);
-        final QuickAction quickAction =
-                new QuickAction(getActivity(), QuickAction.HORIZONTAL);
-        quickAction.addActionItem(new ActionItem(ACTION_ID_COPY,
-                getString(R.string.copy)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT,
-                getString(R.string.highlight)));
-        if (!mSelectedText.trim().contains(" ")) {
-            quickAction.addActionItem(new ActionItem(ACTION_ID_DEFINE,
-                    getString(R.string.define)));
-        }
-        quickAction.addActionItem(new ActionItem(ACTION_ID_SHARE,
-                getString(R.string.share)));
-        quickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
-            @Override
-            public void onItemClick(QuickAction source, int pos, int actionId) {
-                quickAction.dismiss();
-                root.removeView(view);
-                onTextSelectionActionItemClicked(actionId, view, width, height);
-            }
-        });
-        quickAction.show(view, width, height);
-    }
-
-    private void onTextSelectionActionItemClicked(int actionId, View view, int width, int height) {
-        if (actionId == ACTION_ID_COPY) {
-            UiUtil.copyToClipboard(getActivity(), mSelectedText);
-            Toast.makeText(getActivity(), getString(R.string.copied), Toast.LENGTH_SHORT).show();
-            mTextSelectionSupport.endSelectionMode();
-        } else if (actionId == ACTION_ID_SHARE) {
-            UiUtil.share(getActivity(), mSelectedText);
-        } else if (actionId == ACTION_ID_DEFINE) {
-            showDictDialog(mSelectedText);
-            mTextSelectionSupport.endSelectionMode();
-        } else if (actionId == ACTION_ID_HIGHLIGHT) {
-            onHighlight(view, width, height, true);
-        }
-    }
-
-    private void showDictDialog(String mSelectedText) {
-        DictionaryFragment dictionaryFragment = new DictionaryFragment();
-        Bundle b = new Bundle();
-        b.putString(Constants.SELECTED_WORD, mSelectedText);
-        dictionaryFragment.setArguments(b);
-        dictionaryFragment.show(getFragmentManager(), DictionaryFragment.class.getName());
-    }
-
-    private void onHighlight(int x, int y, int width, int height) {
-        final View view = new View(getActivity());
-        view.setLayoutParams(new ViewGroup.LayoutParams(width, height));
-        view.setBackgroundColor(Color.TRANSPARENT);
-        view.setX(x);
-        view.setY(y);
-        onHighlight(view, width, height, false);
-    }
-
-    private void onHighlight(final View view, int width, int height, final boolean isCreated) {
-        ViewGroup root =
-                (ViewGroup) getActivity().getWindow().
-                        getDecorView().findViewById(android.R.id.content);
-        ViewGroup parent = (ViewGroup) view.getParent();
-        if (parent == null) {
-            root.addView(view);
-        } else {
-            final int index = parent.indexOfChild(view);
-            parent.removeView(view);
-            parent.addView(view, index);
-        }
-
-        final QuickAction quickAction = new QuickAction(getActivity(), QuickAction.HORIZONTAL);
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_COLOR,
-                getResources().getDrawable(R.drawable.colors_marker)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_DELETE,
-                getResources().getDrawable(R.drawable.ic_action_discard)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_SHARE,
-                getResources().getDrawable(R.drawable.ic_action_share)));
-        final ViewGroup finalRoot = root;
-        quickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
-            @Override
-            public void onItemClick(QuickAction source, int pos, int actionId) {
-                quickAction.dismiss();
-                finalRoot.removeView(view);
-                onHighlightActionItemClicked(actionId, view, isCreated);
-            }
-        });
-        quickAction.show(view, width, height);
-    }
-
-    private void onHighlightActionItemClicked(int actionId, View view, boolean isCreated) {
-        if (actionId == ACTION_ID_HIGHLIGHT_COLOR) {
-            onHighlightColors(view, isCreated);
-        } else if (actionId == ACTION_ID_SHARE) {
-            UiUtil.share(getActivity(), mSelectedText);
-            mTextSelectionSupport.endSelectionMode();
-        } else if (actionId == ACTION_ID_DELETE) {
-            highlightRemove();
-        }
-    }
-
-    private void onHighlightColors(final View view, final boolean isCreated) {
-        ViewGroup root =
-                (ViewGroup) getActivity().getWindow()
-                        .getDecorView().findViewById(android.R.id.content);
-        ViewGroup parent = (ViewGroup) view.getParent();
-        if (parent == null) {
-            root.addView(view);
-        } else {
-            final int index = parent.indexOfChild(view);
-            parent.removeView(view);
-            parent.addView(view, index);
-        }
-
-        final QuickAction quickAction = new QuickAction(getActivity(), QuickAction.HORIZONTAL);
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_YELLOW,
-                getResources().getDrawable(R.drawable.ic_yellow_marker)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_GREEN,
-                getResources().getDrawable(R.drawable.ic_green_marker)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_BLUE,
-                getResources().getDrawable(R.drawable.ic_blue_marker)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_PINK,
-                getResources().getDrawable(R.drawable.ic_pink_marker)));
-        quickAction.addActionItem(new ActionItem(ACTION_ID_HIGHLIGHT_UNDERLINE,
-                getResources().getDrawable(R.drawable.ic_underline_marker)));
-        final ViewGroup finalRoot = root;
-        quickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
-            @Override
-            public void onItemClick(QuickAction source, int pos, int actionId) {
-                quickAction.dismiss();
-                finalRoot.removeView(view);
-                onHighlightColorsActionItemClicked(actionId, view, isCreated);
-            }
-        });
-        quickAction.show(view);
-    }
-
-    private void onHighlightColorsActionItemClicked(int actionId, View view, boolean isCreated) {
-        if (actionId == ACTION_ID_HIGHLIGHT_YELLOW) {
-            highlight(HighlightImpl.HighlightStyle.Yellow, isCreated);
-        } else if (actionId == ACTION_ID_HIGHLIGHT_GREEN) {
-            highlight(HighlightImpl.HighlightStyle.Green, isCreated);
-        } else if (actionId == ACTION_ID_HIGHLIGHT_BLUE) {
-            highlight(HighlightImpl.HighlightStyle.Blue, isCreated);
-        } else if (actionId == ACTION_ID_HIGHLIGHT_PINK) {
-            highlight(HighlightImpl.HighlightStyle.Pink, isCreated);
-        } else if (actionId == ACTION_ID_HIGHLIGHT_UNDERLINE) {
-            highlight(HighlightImpl.HighlightStyle.Underline, isCreated);
-        }
-        mTextSelectionSupport.endSelectionMode();
     }
 
     @Override
@@ -980,8 +777,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             @Override
             public void run() {
                 if (isAdded()) {
-                    mWebview.scrollTo(0
-                            , position);
+                    mWebview.scrollTo(0, position);
                 }
             }
         });
@@ -1068,5 +864,14 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 }
             }
         }
+    }
+
+    private void showProgressDialog() {
+        if (isFirstDialog) {
+            return;
+        }
+
+        isFirstDialog = true;
+        awesomeProgressDialog.show();
     }
 }

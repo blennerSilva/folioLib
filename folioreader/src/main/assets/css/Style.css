@@ -71,7 +71,7 @@ ol ol, ol ul, ul ol, ul ul {
 
 /* Links */
 a { -webkit-touch-callout: none; } /* Disable link callback */
-* { -webkit-user-select: text; }
+* { -webkit-user-select: none; }
 img { -webkit-user-select: none; }
 p {
     margin: 1.3em 0 1.5em 0;

@@ -13,10 +13,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
 
-
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 import com.folioreader.ui.folio.fragment.FolioPageFragment;
-import com.folioreader.util.AppUtil;
 
 public class HorizontalWebView extends WebView {
 
@@ -55,8 +53,9 @@ public class HorizontalWebView extends WebView {
     private ActionMode.Callback mActionModeCallback;
     private EpubReaderFragment epubReaderFragment;
     private FolioPageFragment.FolioPageFragmentCallback mActivityCallback;
-    private float start_x = -1;
-    private float start_y = -1;
+    private float start_x;
+    private float start_y;
+    private float upX, upY;
     private int current_y = 0;
     private int PAGE_LEFT_COUNT = 3;
     private int PAGE_RIGHT_COUNT = 3;
@@ -193,44 +192,78 @@ public class HorizontalWebView extends WebView {
 
             case (MotionEvent.ACTION_UP):
                  /*right to left*/
+                upX = event.getX();
+                upY = event.getY();
 
-                if (start_x - event.getX() > 10) {
+                float deltaX = start_x - upX;
+                float deltaY = start_y - upY;
 
-                    Log.d(TAG, "onTouchEvent: RTL ScrollY " + getScrollY());
-                    Log.d(TAG, "onTouchEvent: RTL Height" + getContentHeightVal());
-                    turnPageRight();
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // HORIZONTAL SCROLL
 
-                    if (getCurrentPage() + 1 < getTotalPages()) {
-                        turnPageRight();
+                    if (Math.abs(deltaX) > 100) {
+                        // left or right
+                        if (deltaX < 0) {
+                            //this.onLeftToRightSwipe();
+                            return true;
+                        }
+
+                        if (deltaX > 0) {
+                            //this.onRightToLeftSwipe();
+                            return true;
+                        }
                     } else {
-                        epubReaderFragment.loadNextPage();
+                        return onTap(getRootView(), event);
                     }
-
-                    return true;
-                }
-
-                /*Left to right*/
-                if (event.getX() - start_x > 10) {
-                    Log.d(TAG, "onTouchEvent: LTR ScrollY " + getScrollY());
-                    Log.d(TAG, "onTouchEvent: LTR Height" + getContentHeightVal());
-
-                    turnPageLeft();
-
-                    if (getCurrentPage() > 0) {
-                        turnPageLeft();
-                    } else if (getCurrentPage() == 0 && getScrollY() > 0) {
-                        scrollTo(0, 0);
-                    } else {
-                         epubReaderFragment.loadPrevPage();
-                    }
-
-                    return true;
                 }
                 epubReaderFragment.hideOrshowToolBar();
                 break;
-
         }
         return super.onTouchEvent(event);
+    }
+
+    private boolean onTap(View v, MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_UP) {
+            float x = event.getX();
+            float viewWidth = v.getWidth();
+
+            float screenPartSide = ((viewWidth * 30) / 100);
+            float screenPartCenter = ((viewWidth * 40) / 100);
+
+            if (x <= screenPartSide) {
+                Log.d(TAG, "onTouchEvent: LTR ScrollY " + getScrollY());
+                Log.d(TAG, "onTouchEvent: LTR Height" + getContentHeightVal());
+
+                turnPageLeft();
+
+                if (getCurrentPage() > 0) {
+                    turnPageLeft();
+                } else if (getCurrentPage() == 0 && getScrollY() > 0) {
+                    scrollTo(0, 0);
+                } else {
+                    epubReaderFragment.loadPrevPage();
+                }
+
+                return true;
+            } else if (x >= (screenPartSide + screenPartCenter)) {
+                Log.d(TAG, "onTouchEvent: RTL ScrollY " + getScrollY());
+                Log.d(TAG, "onTouchEvent: RTL Height" + getContentHeightVal());
+                turnPageRight();
+
+                if (getCurrentPage() + 1 < getTotalPages()) {
+                    turnPageRight();
+                } else {
+                    epubReaderFragment.loadNextPage();
+                }
+
+                return true;
+            } else {
+                // this.onTapCenter();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void turnPageLeft() {

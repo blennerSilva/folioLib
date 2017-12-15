@@ -1,21 +1,20 @@
 package com.folioreader.model.event;
 
+
+import android.support.v4.app.DialogFragment;
+
 /**
  * Created by blennersilva on 11/12/17.
  */
 
 public class OpenTOC {
-    Class aClass;
+   DialogFragment dialogFragment;
 
-    public OpenTOC(Class aClass) {
-        this.aClass = aClass;
+    public OpenTOC(DialogFragment dialogFragment) {
+        this.dialogFragment = dialogFragment;
     }
 
-    public Class getaClass() {
-        return aClass;
-    }
-
-    public void setaClass(Class aClass) {
-        this.aClass = aClass;
+    public DialogFragment getDialogFragment() {
+        return dialogFragment;
     }
 }

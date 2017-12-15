@@ -29,6 +29,7 @@ import com.folioreader.model.event.GoToChapterEvent;
 import com.folioreader.model.event.JumpToAnchorPoint;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.OpenTOC;
+import com.folioreader.model.event.PopulateTOCItems;
 import com.folioreader.model.event.WebViewPosition;
 import com.folioreader.ui.folio.activity.ContentHighlightActivity;
 import com.folioreader.ui.folio.adapter.FolioPageFragmentAdapter;
@@ -212,7 +213,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
     }
 
     private void configFolio() {
-        if(getView() != null) {
+        if (getView() != null) {
             mFolioPageViewPager = getView().findViewById(R.id.folioPageViewPager);
             mFolioPageViewPager.setOnPageChangeListener(new DirectionalViewpager.OnPageChangeListener() {
                 @Override
@@ -384,15 +385,6 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onOpenTOC(OpenTOC openTOC) {
-        Intent intent = new Intent(getActivity(), openTOC.getaClass());
-        intent.putExtra(CHAPTER_SELECTED, mSpineReferenceList.get(mChapterPosition).href);
-        intent.putExtra(FolioReader.INTENT_BOOK_ID, mBookId);
-        intent.putExtra(Constants.BOOK_TITLE, bookFileName);
-        startActivityForResult(intent, ACTION_CONTENT_HIGHLIGHT);
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -441,6 +433,26 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
                     getActivity().finish();
                 }
                 break;
+        }
+    }
+
+    @Subscribe
+    public void onPopulateTOCItems(PopulateTOCItems event) {
+        AppUtil.setChapterSelected(mSpineReferenceList.get(mChapterPosition).href);
+        AppUtil.setBookId(mBookId);
+        AppUtil.setBookFileName(bookFileName);
+    }
+
+    @Subscribe
+    public void onGoToChapterEvent(GoToChapterEvent event) {
+        String selectedChapterHref = event.getSelectedChapterPosition();
+        for (Link spine : mSpineReferenceList) {
+            if (selectedChapterHref.contains(spine.href)) {
+                mChapterPosition = mSpineReferenceList.indexOf(spine);
+                mFolioPageViewPager.setCurrentItem(mChapterPosition);
+                EventBus.getDefault().post(new AnchorIdEvent(selectedChapterHref));
+                break;
+            }
         }
     }
 }

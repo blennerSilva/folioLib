@@ -34,7 +34,7 @@ android {
     defaultConfig {
         versionCode 1
         versionName "1.0"
-        minSdkVersion 14
+        minSdkVersion 15
         targetSdkVersion 27
     }
 
@@ -80,7 +80,6 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile project(':webViewMarker')
 
     final ANDROID_LIB_VERSION = '27.0.0'
 
@@ -99,6 +98,7 @@ dependencies {
     compile "org.readium:r2-server:$R2_STREAMER_VERSION"
 
     compile 'org.greenrobot:eventbus:3.1.1'
+    compile 'com.github.blennerSilva:AwesomeDialog:2.0.5'
     compile 'com.android.support:support-v4:27.0.2'
 }
 

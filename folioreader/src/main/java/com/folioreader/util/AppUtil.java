@@ -41,6 +41,9 @@ public class AppUtil {
     private static int currentPage;
     private static EpubReaderFragment epubReaderFragment;
     private static int position;
+    private static String chapterSelected;
+    private static String bookId;
+    private static String bookFileName;
 
     private enum FileType {
         OPS,
@@ -215,6 +218,30 @@ public class AppUtil {
 
     public static void setPosition(int position) {
         AppUtil.position = position;
+    }
+
+    public static String getChapterSelected() {
+        return chapterSelected;
+    }
+
+    public static void setChapterSelected(String chapterSelected) {
+        AppUtil.chapterSelected = chapterSelected;
+    }
+
+    public static String getBookId() {
+        return bookId;
+    }
+
+    public static void setBookId(String bookId) {
+        AppUtil.bookId = bookId;
+    }
+
+    public static String getBookFileName() {
+        return bookFileName;
+    }
+
+    public static void setBookFileName(String bookFileName) {
+        AppUtil.bookFileName = bookFileName;
     }
 }
 
