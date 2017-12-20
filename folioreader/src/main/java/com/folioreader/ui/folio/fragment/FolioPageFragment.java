@@ -33,6 +33,7 @@ import android.webkit.WebViewClient;
 import android.widget.TextView;
 
 import com.awesomedialog.blennersilva.awesomedialoglibrary.AwesomeProgressDialog;
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.Config;
 import com.folioreader.Constants;
 import com.folioreader.R;
@@ -87,20 +88,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private static final String KEY_IS_SMIL_AVAILABLE = "com.folioreader.ui.folio.fragment.FolioPageFragment.IS_SMIL_AVAILABLE";
     public static final String TAG = FolioPageFragment.class.getSimpleName();
 
-    private static final int ACTION_ID_COPY = 1001;
-    private static final int ACTION_ID_SHARE = 1002;
-    private static final int ACTION_ID_HIGHLIGHT = 1003;
-    private static final int ACTION_ID_DEFINE = 1004;
-
-    private static final int ACTION_ID_HIGHLIGHT_COLOR = 1005;
-    private static final int ACTION_ID_DELETE = 1006;
-
-    private static final int ACTION_ID_HIGHLIGHT_YELLOW = 1007;
-    private static final int ACTION_ID_HIGHLIGHT_GREEN = 1008;
-    private static final int ACTION_ID_HIGHLIGHT_BLUE = 1009;
-    private static final int ACTION_ID_HIGHLIGHT_PINK = 1010;
-    private static final int ACTION_ID_HIGHLIGHT_UNDERLINE = 1011;
-    private static final String KEY_TEXT_ELEMENTS = "text_elements";
     private static final String SPINE_ITEM = "spine_item";
     private static final int FADE_DAY_NIGHT_MODE = 500;
 
@@ -111,6 +98,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private String highlightId;
     private boolean mIsNightMode = false;
     private AwesomeProgressDialog awesomeProgressDialog;
+    private ShowInterfacesControls showInterfacesControls;
 
     public interface FolioPageFragmentCallback {
 
@@ -119,6 +107,10 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         void setLastWebViewPosition(int position);
 
         void goToChapter(String href);
+    }
+
+    public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
+        this.showInterfacesControls = showInterfacesControls;
     }
 
     private View mRootView;
@@ -235,8 +227,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     @SuppressWarnings("unused")
     @Subscribe
     public void pauseButtonClicked(MediaOverlayPlayPauseEvent event) {
-        if (isAdded()
-                && spineItem.href.equals(event.getHref())) {
+        if (isAdded() && spineItem.href.equals(event.getHref())) {
             mediaController.stateChanged(event);
         }
     }
@@ -253,16 +244,13 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         if (isAdded()) {
             switch (event.getStyle()) {
                 case DEFAULT:
-                    highlightStyle =
-                            HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.Normal);
+                    highlightStyle = HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.Normal);
                     break;
                 case UNDERLINE:
-                    highlightStyle =
-                            HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.DottetUnderline);
+                    highlightStyle = HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.DottetUnderline);
                     break;
                 case BACKGROUND:
-                    highlightStyle =
-                            HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.TextColor);
+                    highlightStyle = HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.TextColor);
                     break;
             }
             mWebview.loadUrl(String.format(getString(R.string.setmediaoverlaystyle), highlightStyle));
@@ -395,7 +383,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     }
 
     private void initWebView() {
-        mWebview = (HorizontalWebView) mRootView.findViewById(R.id.contentWebView);
+        mWebview = mRootView.findViewById(R.id.contentWebView);
         mWebview.setFragment(epubReaderFragment);
         mWebview.setVerticalScrollBarEnabled(false);
         mWebview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
@@ -422,6 +410,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         mWebview.getSettings().setJavaScriptEnabled(true);
         mWebview.setVerticalScrollBarEnabled(false);
         mWebview.getSettings().setAllowFileAccess(true);
+        mWebview.setShowInterfacesControls(new ShowInterfacesControls() {
+            @Override
+            public void showInterfaceControls() {
+                showInterfacesControls.showInterfaceControls();
+            }
+        });
 
         mWebview.setHorizontalScrollBarEnabled(false);
 
@@ -433,10 +427,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     mScrollY = mWebview.getScrollY();
                     if (isAdded()) {
                         epubReaderFragment.setLastWebViewPosition(mScrollY);
+                        getPageIndex();
                     }
                 }
                 mScrollSeekbar.setProgressAndThumb(percent);
                 updatePagesLeftText(percent);
+                getPageIndex();
             }
         });
 
@@ -540,7 +536,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         @Override
                         public void run() {
                             Log.d("scroll y", "Scrolly" + mScrollY);
-                            mWebview.scrollTo(0, mScrollY);
+
+                            if (getPageIndex() > 0) {
+                                mWebview.scrollTo(0, getPageIndex());
+                            } else {
+                                mWebview.scrollTo(0, 0);
+                            }
                         }
                     }, 100);
                 }
@@ -613,7 +614,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     }
 
     private void updatePagesLeftTextBg() {
-
         if (mConfig.isNightMode()) {
             mRootView.findViewById(R.id.indicatorLayout)
                     .setBackgroundColor(Color.parseColor("#131313"));
@@ -628,12 +628,8 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             int currentPage = (int) (Math.ceil((double) scrollY / mWebview.getWebviewHeight()) + 1);
             int totalPages = (int) Math.ceil((double) mWebview.getContentHeightVal() / mWebview.getWebviewHeight());
             int pagesRemaining = totalPages - currentPage;
-            String pagesRemainingStrFormat =
-                    pagesRemaining > 1 ?
-                            getString(R.string.pages_left) : getString(R.string.page_left);
-            String pagesRemainingStr = String.format(Locale.US,
-                    pagesRemainingStrFormat, pagesRemaining);
-
+            String pagesRemainingStrFormat = pagesRemaining > 1 ? getString(R.string.pages_left) : getString(R.string.page_left);
+            String pagesRemainingStr = String.format(Locale.US, pagesRemainingStrFormat, pagesRemaining);
             int minutesRemaining =
                     (int) Math.ceil((double) (pagesRemaining * mTotalMinutes) / totalPages);
             String minutesRemainingStr;
@@ -777,7 +773,11 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             @Override
             public void run() {
                 if (isAdded()) {
-                    mWebview.scrollTo(0, position);
+                    if (getPageIndex() > 0) {
+                        mWebview.scrollTo(0, getPageIndex());
+                    } else {
+                        mWebview.scrollTo(0, 0);
+                    }
                 }
             }
         });
@@ -874,4 +874,11 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         isFirstDialog = true;
         awesomeProgressDialog.show();
     }
+
+    private int getPageIndex() {
+        //TODO Melhorar essa formular para que aceite inteiros corretamente
+        double scrollToPage = (mWebview.getWebviewHeight() * (AppUtil.getCurrentPage() - 1));
+        return (int) scrollToPage;
+    }
+
 }

@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
 
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 import com.folioreader.ui.folio.fragment.FolioPageFragment;
 
@@ -21,6 +22,7 @@ public class HorizontalWebView extends WebView {
     private SeekBarListener mSeekBarListener;
     private ToolBarListener mToolBarListener;
     private ScrollListener mScrollListener;
+    ShowInterfacesControls showInterfacesControls;
 
     public interface ScrollListener {
         void onScrollChange(int percent);
@@ -37,6 +39,10 @@ public class HorizontalWebView extends WebView {
     }
 
 
+    public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
+        this.showInterfacesControls = showInterfacesControls;
+    }
+
     public void setScrollListener(ScrollListener listener) {
         mScrollListener = listener;
     }
@@ -49,7 +55,7 @@ public class HorizontalWebView extends WebView {
         mToolBarListener = listener;
     }
 
-    private static final String TAG = "ObservableWebview";
+    private static final String TAG = "HorizontalWebView";
     private ActionMode.Callback mActionModeCallback;
     private EpubReaderFragment epubReaderFragment;
     private FolioPageFragment.FolioPageFragmentCallback mActivityCallback;
@@ -216,7 +222,8 @@ public class HorizontalWebView extends WebView {
                         return onTap(getRootView(), event);
                     }
                 }
-                epubReaderFragment.hideOrshowToolBar();
+
+                showInterfacesControls.showInterfaceControls();
                 break;
         }
         return super.onTouchEvent(event);
@@ -315,7 +322,7 @@ public class HorizontalWebView extends WebView {
 
     public int getCurrentPage() {
         int currentPage = (int) (Math.ceil((double) current_y / getWebviewHeight()));
-        Log.d(TAG, "getCurrentPage: " + currentPage);
+        Log.d(TAG, "setCurrentPage: " + currentPage);
         return currentPage;
     }
 

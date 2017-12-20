@@ -23,12 +23,11 @@ import android.widget.Toast;
 import com.folioreader.Config;
 import com.folioreader.Constants;
 import com.folioreader.R;
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.model.HighlightImpl;
 import com.folioreader.model.event.AnchorIdEvent;
 import com.folioreader.model.event.GoToChapterEvent;
-import com.folioreader.model.event.JumpToAnchorPoint;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
-import com.folioreader.model.event.OpenTOC;
 import com.folioreader.model.event.PopulateTOCItems;
 import com.folioreader.model.event.WebViewPosition;
 import com.folioreader.ui.folio.activity.ContentHighlightActivity;
@@ -40,11 +39,9 @@ import com.folioreader.util.FileUtil;
 import com.folioreader.util.FolioReader;
 import com.folioreader.view.ConfigBottomSheetDialogFragment;
 import com.folioreader.view.DirectionalViewpager;
-import com.folioreader.view.HorizontalWebView;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 import org.readium.r2_streamer.model.container.Container;
 import org.readium.r2_streamer.model.container.EpubContainer;
 import org.readium.r2_streamer.model.publication.EpubPublication;
@@ -62,7 +59,7 @@ import static com.folioreader.Constants.HIGHLIGHT_SELECTED;
 import static com.folioreader.Constants.SELECTED_CHAPTER_POSITION;
 import static com.folioreader.Constants.TYPE;
 
-public class EpubReaderFragment extends Fragment implements FolioPageFragment.FolioPageFragmentCallback, HorizontalWebView.ToolBarListener, ConfigBottomSheetDialogFragment.ConfigDialogCallback, MainMvpView {
+public class EpubReaderFragment extends Fragment implements FolioPageFragment.FolioPageFragmentCallback, ConfigBottomSheetDialogFragment.ConfigDialogCallback, MainMvpView {
 
     private static final String TAG = "FolioActivity";
 
@@ -104,9 +101,14 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
     private String mEpubFilePath;
     private EpubReaderFragment.EpubSourceType mEpubSourceType;
     int mEpubRawId = 0;
+    private ShowInterfacesControls showInterfacesControls;
 
     public EpubReaderFragment() {
         // Required empty public constructor
+    }
+
+    public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
+        this.showInterfacesControls = showInterfacesControls;
     }
 
     public static EpubReaderFragment newInstance(String assetOrSdcardPath, EpubSourceType type) {
@@ -236,7 +238,15 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
 
             if (mSpineReferenceList != null) {
                 mFolioPageFragmentAdapter = new FolioPageFragmentAdapter(getFragmentManager(), mSpineReferenceList, bookFileName, mBookId, this);
+                mFolioPageFragmentAdapter.setShowInterfacesControls(new ShowInterfacesControls() {
+                    @Override
+                    public void showInterfaceControls() {
+                        showInterfacesControls.showInterfaceControls();
+                        Log.d("TESTE2", "AQUI");
+                    }
+                });
                 mFolioPageViewPager.setAdapter(mFolioPageFragmentAdapter);
+
             }
 
             if (AppUtil.checkPreviousBookStateExist(getActivity(), bookFileName)) {
@@ -286,16 +296,6 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
             }
         }
         configFolio();
-    }
-
-    @Override
-    public void hideOrshowToolBar() {
-
-    }
-
-    @Override
-    public void hideToolBarIfVisible() {
-
     }
 
     @Override
@@ -436,6 +436,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         }
     }
 
+    @SuppressWarnings("unused")
     @Subscribe
     public void onPopulateTOCItems(PopulateTOCItems event) {
         AppUtil.setChapterSelected(mSpineReferenceList.get(mChapterPosition).href);
@@ -443,6 +444,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         AppUtil.setBookFileName(bookFileName);
     }
 
+    @SuppressWarnings("unused")
     @Subscribe
     public void onGoToChapterEvent(GoToChapterEvent event) {
         String selectedChapterHref = event.getSelectedChapterPosition();

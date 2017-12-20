@@ -7,7 +7,7 @@ import android.content.IntentFilter;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
 
-import com.folioreader.Config;
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.model.HighLight;
 import com.folioreader.model.HighlightImpl;
 import com.folioreader.model.event.ChangeFontEvent;
@@ -28,10 +28,14 @@ import java.util.List;
 public class FolioReader {
     public static final String INTENT_BOOK_ID = "book_id";
     private Context context;
-    private Config mConfig;
-
 
     private OnHighlightListener onHighlightListener;
+    private ShowInterfacesControls showInterfacesControls;
+
+
+    public void showInterfaceControls(ShowInterfacesControls showInterfacesControls) {
+        this.showInterfacesControls = showInterfacesControls;
+    }
 
     public FolioReader(Context context) {
         this.context = context;
@@ -56,78 +60,19 @@ public class FolioReader {
         getFragmentFromUrl(assetOrSdcardPath, contentId, context);
     }
 
-    /*public void openBook(String assetOrSdcardPath) {
-        Intent intent = getIntentFromUrl(assetOrSdcardPath, 0);
-        context.startActivity(intent);
-    }
-
-    public void openBook(int rawId) {
-        Intent intent = getIntentFromUrl(null, rawId);
-        context.startActivity(intent);
-    }
-
-    public void openBook(String assetOrSdcardPath, Config config) {
-        Intent intent = getIntentFromUrl(assetOrSdcardPath, 0);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        context.startActivity(intent);
-    }
-
-    public void openBook(int rawId, Config config) {
-        Intent intent = getIntentFromUrl(null, rawId);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        context.startActivity(intent);
-    }
-
-    public void openBook(String assetOrSdcardPath, Config config, int port) {
-        Intent intent = getIntentFromUrl(assetOrSdcardPath, 0);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        intent.putExtra(Config.INTENT_PORT, port);
-        context.startActivity(intent);
-    }
-
-    public void openBook(int rawId, Config config, int port) {
-        Intent intent = getIntentFromUrl(null, rawId);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        intent.putExtra(Config.INTENT_PORT, port);
-        context.startActivity(intent);
-    }
-
-    public void openBook(String assetOrSdcardPath, Config config, int port, String bookId) {
-        Intent intent = getIntentFromUrl(assetOrSdcardPath, 0);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        intent.putExtra(Config.INTENT_PORT, port);
-        intent.putExtra(INTENT_BOOK_ID, bookId);
-        context.startActivity(intent);
-    }
-
-    public void openBook(int rawId, Config config, int port, String bookId) {
-        Intent intent = getIntentFromUrl(null, rawId);
-        intent.putExtra(Config.INTENT_CONFIG, config);
-        intent.putExtra(Config.INTENT_PORT, port);
-        intent.putExtra(INTENT_BOOK_ID, bookId);
-        context.startActivity(intent);
-    }*/
-
-    /*private Intent getIntentFromUrl(String assetOrSdcardPath, int rawId) {
-        Intent intent = new Intent(context, FolioActivity.class);
-        if (rawId != 0) {
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_PATH, rawId);
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_TYPE, FolioActivity.EpubSourceType.RAW);
-        } else if (assetOrSdcardPath.contains(Constants.ASSET)) {
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_PATH, assetOrSdcardPath);
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_TYPE, FolioActivity.EpubSourceType.ASSETS);
-        } else {
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_PATH, assetOrSdcardPath);
-            intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_TYPE, FolioActivity.EpubSourceType.SD_CARD);
-        }
-        return intent;
-    }
-*/
     private void getFragmentFromUrl(String assetOrSdcardPath, int contentId, Context context) {
         FragmentActivity activity = (FragmentActivity) context;
+
+        EpubReaderFragment epubReaderFragment = EpubReaderFragment.newInstance(assetOrSdcardPath, EpubReaderFragment.EpubSourceType.ASSETS);
+        epubReaderFragment.setShowInterfacesControls(new ShowInterfacesControls() {
+            @Override
+            public void showInterfaceControls() {
+                showInterfacesControls.showInterfaceControls();
+            }
+        });
         android.support.v4.app.FragmentManager fragmentManager = activity.getSupportFragmentManager();
         android.support.v4.app.FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(getContentLayoutToReplace(contentId), EpubReaderFragment.newInstance(assetOrSdcardPath, EpubReaderFragment.EpubSourceType.ASSETS));
+        fragmentTransaction.replace(getContentLayoutToReplace(contentId), epubReaderFragment);
         fragmentTransaction.commit();
     }
 
@@ -158,6 +103,10 @@ public class FolioReader {
 
     public void setThemeChoiceDay() {
         EventBus.getDefault().post(new ChangeThemeEvent(ChangeThemeEvent.Theme.DAY_THEME));
+    }
+
+    public void setCurrentPage(int pageIndex) {
+        AppUtil.setCurrentPage(pageIndex);
     }
 
     public int getCurrentPage() {

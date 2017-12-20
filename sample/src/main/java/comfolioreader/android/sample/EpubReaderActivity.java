@@ -6,15 +6,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.util.FolioReader;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 public class EpubReaderActivity extends AppCompatActivity {
 
     private FolioReader folioReader;
+    private Button btnfontSize;
+    private Button btnfontSizeMinus;
+    private Button btnTema;
+    private Button btnTemaNght;
+    private Button btnCurrentPage;
+    private boolean isToolbarVisible;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,9 +26,8 @@ public class EpubReaderActivity extends AppCompatActivity {
 
         folioReader = new FolioReader(this);
         folioReader.openBook("file:///android_asset/TheSilverChair.epub", R.id.containerEpub, this);
-
-
-        Button btnfontSize = findViewById(R.id.btnfontsinze);
+        folioReader.setCurrentPage(0);
+        btnfontSize = findViewById(R.id.btnfontsinze);
         btnfontSize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -33,7 +35,7 @@ public class EpubReaderActivity extends AppCompatActivity {
             }
         });
 
-        Button btnfontSizeMinus = findViewById(R.id.btnfontsinzeMinus);
+        btnfontSizeMinus = findViewById(R.id.btnfontsinzeMinus);
         btnfontSizeMinus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -41,7 +43,7 @@ public class EpubReaderActivity extends AppCompatActivity {
             }
         });
 
-        Button btnTema = findViewById(R.id.btnTemaDay);
+        btnTema = findViewById(R.id.btnTemaDay);
         btnTema.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -49,7 +51,7 @@ public class EpubReaderActivity extends AppCompatActivity {
             }
         });
 
-        Button btnTemaNght = findViewById(R.id.btnTemaNight);
+        btnTemaNght = findViewById(R.id.btnTemaNight);
         btnTemaNght.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -57,7 +59,7 @@ public class EpubReaderActivity extends AppCompatActivity {
             }
         });
 
-        Button btnCurrentPage = findViewById(R.id.btnCurrentPage);
+        btnCurrentPage = findViewById(R.id.btnCurrentPage);
         btnCurrentPage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -66,5 +68,37 @@ public class EpubReaderActivity extends AppCompatActivity {
             }
         });
 
+        folioReader.showInterfaceControls(new ShowInterfacesControls() {
+            @Override
+            public void showInterfaceControls() {
+                if (isToolbarVisible) {
+                    hideButtons();
+                } else {
+                    makeButtonsVisible();
+                }
+            }
+        });
+
     }
+
+    private void makeButtonsVisible() {
+        btnfontSizeMinus.setVisibility(View.VISIBLE);
+        btnfontSize.setVisibility(View.VISIBLE);
+        btnfontSizeMinus.setVisibility(View.VISIBLE);
+        btnTema.setVisibility(View.VISIBLE);
+        btnTemaNght.setVisibility(View.VISIBLE);
+        btnCurrentPage.setVisibility(View.VISIBLE);
+        isToolbarVisible = true;
+    }
+
+    private void hideButtons() {
+        btnfontSizeMinus.setVisibility(View.GONE);
+        btnfontSize.setVisibility(View.GONE);
+        btnfontSizeMinus.setVisibility(View.GONE);
+        btnTema.setVisibility(View.GONE);
+        btnTemaNght.setVisibility(View.GONE);
+        btnCurrentPage.setVisibility(View.GONE);
+        isToolbarVisible = false;
+    }
+
 }

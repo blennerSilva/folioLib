@@ -44,6 +44,7 @@ public class AppUtil {
     private static String chapterSelected;
     private static String bookId;
     private static String bookFileName;
+    private static int getPagePosition;
 
     private enum FileType {
         OPS,
@@ -174,9 +175,7 @@ public class AppUtil {
             obj.put(Config.CONFIG_IS_NIGHTMODE, config.isNightMode());
             obj.put(Config.CONFIG_IS_THEMECOLOR, config.getThemeColor());
             obj.put(Config.CONFIG_IS_TTS,config.isShowTts());
-            SharedPreferenceUtil.
-                    putSharedPreferencesString(
-                            context, Config.INTENT_CONFIG, obj.toString());
+            SharedPreferenceUtil.putSharedPreferencesString(context, Config.INTENT_CONFIG, obj.toString());
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage());
         }

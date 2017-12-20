@@ -9,33 +9,38 @@
         android:id="@+id/btnfontsinze"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:text="A" />
+        android:text="A"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnfontsinzeMinus"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_marginLeft="60dp"
-        android:text="-A" />
+        android:text="-A"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnTemaDay"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_marginLeft="120dp"
-        android:text="Day" />
+        android:text="Day"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnTemaNight"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_marginLeft="180dp"
-        android:text="Night" />
+        android:text="Night"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnCurrentPage"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_marginLeft="240dp"
-        android:text="Current" />
+        android:text="Current"
+        android:visibility="gone"/>
 </RelativeLayout>
