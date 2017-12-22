@@ -187,8 +187,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
             int portNumber = args.getInt(Config.INTENT_PORT, Constants.PORT_NUMBER);
             mEpubServer = EpubServerSingleton.getEpubServerInstance(portNumber);
             mEpubServer.start();
-            String path = FileUtil.saveEpubFileAndLoadLazyBook(getActivity(), mEpubSourceType, mEpubFilePath,
-                    mEpubRawId, mEpubFileName);
+            String path = FileUtil.getEpubFromInternalStorage(getActivity(), mEpubFileName);
             addEpub(path);
 
             String urlString = Constants.LOCALHOST + bookFileName + "/manifest";

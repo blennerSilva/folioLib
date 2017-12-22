@@ -10,11 +10,16 @@ import com.folioreader.Constants;
 
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * Created by Mahavir on 12/15/16.
@@ -69,6 +74,26 @@ public class FileUtil {
     private static boolean isFolderAvailable(String epubFileName) {
         File file = new File(getFolioEpubFolderPath(epubFileName));
         return file.isDirectory();
+    }
+
+    public static String getEpubFromInternalStorage(Context context, String filename) {
+        try {
+            FileInputStream fis = context.openFileInput(filename);
+            InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+            BufferedReader bufferedReader = new BufferedReader(isr);
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString();
+        } catch (FileNotFoundException e) {
+            return "";
+        } catch (UnsupportedEncodingException e) {
+            return "";
+        } catch (IOException e) {
+            return "";
+        }
     }
 
     public static String getEpubFilename(Context context, EpubReaderFragment.EpubSourceType epubSourceType,

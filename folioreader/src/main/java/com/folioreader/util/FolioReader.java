@@ -63,7 +63,7 @@ public class FolioReader {
     private void getFragmentFromUrl(String assetOrSdcardPath, int contentId, Context context) {
         FragmentActivity activity = (FragmentActivity) context;
 
-        EpubReaderFragment epubReaderFragment = EpubReaderFragment.newInstance(assetOrSdcardPath, EpubReaderFragment.EpubSourceType.ASSETS);
+        EpubReaderFragment epubReaderFragment = EpubReaderFragment.newInstance(assetOrSdcardPath, EpubReaderFragment.EpubSourceType.SD_CARD);
         epubReaderFragment.setShowInterfacesControls(new ShowInterfacesControls() {
             @Override
             public void showInterfaceControls() {

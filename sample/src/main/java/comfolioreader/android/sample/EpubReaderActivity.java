@@ -25,7 +25,7 @@ public class EpubReaderActivity extends AppCompatActivity {
         setContentView(R.layout.activity_epub_reader);
 
         folioReader = new FolioReader(this);
-        folioReader.openBook("file:///android_asset/TheSilverChair.epub", R.id.containerEpub, this);
+        folioReader.openBook(getFilesDir().getAbsolutePath() + "/" + "blenner.epub", R.id.containerEpub, this);
         folioReader.setCurrentPage(0);
         btnfontSize = findViewById(R.id.btnfontsinze);
         btnfontSize.setOnClickListener(new View.OnClickListener() {
