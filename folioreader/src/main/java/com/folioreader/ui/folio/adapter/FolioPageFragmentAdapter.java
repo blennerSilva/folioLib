@@ -6,6 +6,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.util.Log;
 
+import com.folioreader.PageHasChangedListener;
+import com.folioreader.PageHasFinishedLoading;
 import com.folioreader.ShowInterfacesControls;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 import com.folioreader.ui.folio.fragment.FolioPageFragment;
@@ -23,9 +25,19 @@ public class FolioPageFragmentAdapter extends FragmentStatePagerAdapter {
     private String mBookId;
     private EpubReaderFragment epubReaderFragment;
     private ShowInterfacesControls showInterfacesControls;
+    private PageHasChangedListener pageHasChangedListener;
+    private PageHasFinishedLoading pageHasFinishedLoading;
 
     public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
         this.showInterfacesControls = showInterfacesControls;
+    }
+
+    public void setPageHasChangedListener(PageHasChangedListener pageHasChangedListener) {
+        this.pageHasChangedListener = pageHasChangedListener;
+    }
+
+    public void setPageHasFinishedLoading(PageHasFinishedLoading pageHasFinishedLoading) {
+        this.pageHasFinishedLoading = pageHasFinishedLoading;
     }
 
     public FolioPageFragmentAdapter(FragmentManager fm, List<Link> spineReferences, String epubFileName, String bookId, EpubReaderFragment epubReaderFragment) {
@@ -45,6 +57,22 @@ public class FolioPageFragmentAdapter extends FragmentStatePagerAdapter {
             public void showInterfaceControls() {
                 showInterfacesControls.showInterfaceControls();
                 Log.d("TESTE2", "FolioPageFragment");
+            }
+        });
+
+        mFolioPageFragment.setPageHasChangedListener(new PageHasChangedListener() {
+            @Override
+            public void pageHasChanged() {
+                pageHasChangedListener.pageHasChanged();
+                Log.d("pageHasChanged", "FolioPageFragmentAdapter");
+            }
+        });
+
+        mFolioPageFragment.setPageHasFinishedLoading(new PageHasFinishedLoading() {
+            @Override
+            public void pageHasFinishedLoading() {
+                pageHasFinishedLoading.pageHasFinishedLoading();
+                Log.d("pageHasFinishedLoading", "FolioPageFragmentAdapter");
             }
         });
         return mFolioPageFragment;

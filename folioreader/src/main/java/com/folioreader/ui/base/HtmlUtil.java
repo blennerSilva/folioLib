@@ -25,7 +25,7 @@ public final class HtmlUtil {
 
 
         String jsPath = String.format(context.getString(R.string.script_tag),
-                        "file:///android_asset/js/jsface.min.js");
+                "file:///android_asset/js/jsface.min.js");
         jsPath =
                 jsPath + String.format(context.getString(R.string.script_tag),
                         "file:///android_asset/js/jquery-3.1.1.min.js");
@@ -81,24 +81,16 @@ public final class HtmlUtil {
             classes += " nightMode";
         }
 
-        switch (config.getFontSize()) {
-            case 0:
-                classes += " textSizeOne";
-                break;
-            case 1:
-                classes += " textSizeTwo";
-                break;
-            case 2:
-                classes += " textSizeThree";
-                break;
-            case 3:
-                classes += " textSizeFour";
-                break;
-            case 4:
-                classes += " textSizeFive";
-                break;
-            default:
-                break;
+        if (config.getFontSize() > 0 && config.getFontSize() < 3) {
+            classes += " textSizeOne";
+        } else if (config.getFontSize() > 3 && config.getFontSize() < 6) {
+            classes += " textSizeTwo";
+        } else if (config.getFontSize() > 7 && config.getFontSize() < 10) {
+            classes += " textSizeThree";
+        } else if (config.getFontSize() > 11 && config.getFontSize() < 14) {
+            classes += " textSizeFour";
+        } else if (config.getFontSize() > 14 && config.getFontSize() < 20) {
+            classes += " textSizeFive";
         }
 
         htmlContent = htmlContent.replace("<html ", "<html class=\"" + classes + "\" ");

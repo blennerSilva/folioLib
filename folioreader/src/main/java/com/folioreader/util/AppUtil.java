@@ -5,22 +5,20 @@ import android.util.Log;
 
 import com.folioreader.Config;
 import com.folioreader.Constants;
-import com.folioreader.R;
+import com.folioreader.model.TOCLinkWrapper;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.readium.r2_streamer.model.publication.link.Link;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,10 +39,19 @@ public class AppUtil {
     private static int currentPage;
     private static EpubReaderFragment epubReaderFragment;
     private static int position;
-    private static String chapterSelected;
+    private static List<Link> chapterList;
     private static String bookId;
     private static String bookFileName;
     private static int getPagePosition;
+    private static int getChapterPosition;
+    private static int getCurrentchapterPage;
+    private static String spineItemHref;
+    private static String bookTile;
+    private static String rangy;
+    private static String currentChapterName;
+    private static TOCLinkWrapper tocLinkWrapper;
+    private static double pageIndex;
+    private  static boolean comeFromBookmark = false;
 
     private enum FileType {
         OPS,
@@ -219,12 +226,12 @@ public class AppUtil {
         AppUtil.position = position;
     }
 
-    public static String getChapterSelected() {
-        return chapterSelected;
+    public static List<Link> getChapterList() {
+        return chapterList;
     }
 
-    public static void setChapterSelected(String chapterSelected) {
-        AppUtil.chapterSelected = chapterSelected;
+    public static void setChapterList(List<Link> chapterList) {
+        AppUtil.chapterList = chapterList;
     }
 
     public static String getBookId() {
@@ -241,6 +248,78 @@ public class AppUtil {
 
     public static void setBookFileName(String bookFileName) {
         AppUtil.bookFileName = bookFileName;
+    }
+
+    public static int getChapterPosition() {
+        return getChapterPosition;
+    }
+
+    public static void setGetChapterPosition(int getChapterPosition) {
+        AppUtil.getChapterPosition = getChapterPosition;
+    }
+
+    public static int getGetCurrentchapterPage() {
+        return getCurrentchapterPage;
+    }
+
+    public static void setGetCurrentchapterPage(int getCurrentchapterPage) {
+        AppUtil.getCurrentchapterPage = getCurrentchapterPage;
+    }
+
+    public static String getSpineItemHref() {
+        return spineItemHref;
+    }
+
+    public static void setSpineItemHref(String pageName) {
+        AppUtil.spineItemHref = pageName;
+    }
+
+    public static String getBookTile() {
+        return bookTile;
+    }
+
+    public static void setBookTile(String bookTile) {
+        AppUtil.bookTile = bookTile;
+    }
+
+    public static String getRangy() {
+        return rangy;
+    }
+
+    public static void setRangy(String rangy) {
+        AppUtil.rangy = rangy;
+    }
+
+    public static String getCurrentChapterName() {
+        return currentChapterName;
+    }
+
+    public static void setCurrentChapterName(String currentChapterName) {
+        AppUtil.currentChapterName = currentChapterName;
+    }
+
+    public static TOCLinkWrapper getTocLinkWrapper() {
+        return tocLinkWrapper;
+    }
+
+    public static void setTocLinkWrapper(TOCLinkWrapper tocLinkWrapper) {
+        AppUtil.tocLinkWrapper = tocLinkWrapper;
+    }
+
+    public static double getPageIndex() {
+        return pageIndex;
+    }
+
+    public static void setPageIndex(double pageIndex) {
+        AppUtil.pageIndex = pageIndex;
+    }
+
+    public static boolean isComeFromBookmark() {
+        return comeFromBookmark;
+    }
+
+    public static void setComeFromBookmark(boolean comeFromBookmark) {
+        AppUtil.comeFromBookmark = comeFromBookmark;
     }
 }
 

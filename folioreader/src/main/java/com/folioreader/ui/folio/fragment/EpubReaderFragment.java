@@ -1,13 +1,11 @@
 package com.folioreader.ui.folio.fragment;
 
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.Toolbar;
@@ -20,20 +18,26 @@ import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.folioreader.ChapterHasChangedListener;
 import com.folioreader.Config;
 import com.folioreader.Constants;
+import com.folioreader.PageHasChangedListener;
+import com.folioreader.PageHasFinishedLoading;
 import com.folioreader.R;
 import com.folioreader.ShowInterfacesControls;
-import com.folioreader.model.HighlightImpl;
-import com.folioreader.model.event.AnchorIdEvent;
+import com.folioreader.model.TOCLinkWrapper;
+import com.folioreader.model.event.GetTOCLinkWrapper;
+import com.folioreader.model.event.GoToBookMarkEvent;
 import com.folioreader.model.event.GoToChapterEvent;
+import com.folioreader.model.event.GoToPageEvent;
+import com.folioreader.model.event.JumpToBookmarkPage;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.PopulateTOCItems;
-import com.folioreader.model.event.WebViewPosition;
-import com.folioreader.ui.folio.activity.ContentHighlightActivity;
 import com.folioreader.ui.folio.adapter.FolioPageFragmentAdapter;
 import com.folioreader.ui.folio.presenter.MainMvpView;
 import com.folioreader.ui.folio.presenter.MainPresenter;
+import com.folioreader.ui.tableofcontents.presenter.TOCMvpView;
+import com.folioreader.ui.tableofcontents.presenter.TableOfContentsPresenter;
 import com.folioreader.util.AppUtil;
 import com.folioreader.util.FileUtil;
 import com.folioreader.util.FolioReader;
@@ -53,13 +57,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.app.Activity.RESULT_OK;
-import static com.folioreader.Constants.CHAPTER_SELECTED;
-import static com.folioreader.Constants.HIGHLIGHT_SELECTED;
-import static com.folioreader.Constants.SELECTED_CHAPTER_POSITION;
-import static com.folioreader.Constants.TYPE;
-
-public class EpubReaderFragment extends Fragment implements FolioPageFragment.FolioPageFragmentCallback, ConfigBottomSheetDialogFragment.ConfigDialogCallback, MainMvpView {
+public class EpubReaderFragment extends Fragment implements TOCMvpView, FolioPageFragment.FolioPageFragmentCallback, ConfigBottomSheetDialogFragment.ConfigDialogCallback, MainMvpView {
 
     private static final String TAG = "FolioActivity";
 
@@ -67,6 +65,12 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
     public static final String INTENT_EPUB_SOURCE_TYPE = "epub_source_type";
     public static final String INTENT_HIGHLIGHTS_LIST = "highlight_list";
     private Bundle args;
+
+    @Override
+    public void onLoadTOC(ArrayList<TOCLinkWrapper> tocLinkWrapperList) {
+        tocLinkWrapperArrayList = tocLinkWrapperList;
+        Log.d("Gerou lista", "tocLinkWrapper");
+    }
 
     public enum EpubSourceType {
         RAW,
@@ -102,6 +106,12 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
     private EpubReaderFragment.EpubSourceType mEpubSourceType;
     int mEpubRawId = 0;
     private ShowInterfacesControls showInterfacesControls;
+    private PageHasChangedListener pageHasChangedListener;
+    private ChapterHasChangedListener chapterHasChangedListener;
+    private TableOfContentsPresenter presenter;
+    private ArrayList<TOCLinkWrapper> tocLinkWrapperArrayList;
+    private PageHasFinishedLoading pageHasFinishedLoading;
+    private boolean comingFromBookMark = true;
 
     public EpubReaderFragment() {
         // Required empty public constructor
@@ -109,6 +119,19 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
 
     public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
         this.showInterfacesControls = showInterfacesControls;
+    }
+
+
+    public void setPageHasChangedListener(PageHasChangedListener pageHasChangedListener) {
+        this.pageHasChangedListener = pageHasChangedListener;
+    }
+
+    public void setChapterHasChangedListener(ChapterHasChangedListener chapterHasChangedListener) {
+        this.chapterHasChangedListener = chapterHasChangedListener;
+    }
+
+    public void setPageHasFinishedLoading(PageHasFinishedLoading pageHasFinishedLoading) {
+        this.pageHasFinishedLoading = pageHasFinishedLoading;
     }
 
     public static EpubReaderFragment newInstance(String assetOrSdcardPath, EpubSourceType type) {
@@ -121,6 +144,12 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         return epubReaderFragment;
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        presenter = new TableOfContentsPresenter(this);
+        tocLinkWrapperArrayList = new ArrayList<>();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -156,30 +185,14 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         slide_up = AnimationUtils.loadAnimation(getActivity().getApplicationContext(),
                 R.anim.slide_up);
 
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), Constants.getWriteExternalStoragePerms(), Constants.WRITE_EXTERNAL_STORAGE_REQUEST);
-        } else {
-            setupBook();
-        }
+        setupBook();
         mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
-
-        getActivity().findViewById(R.id.btn_drawer2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), ContentHighlightActivity.class);
-                intent.putExtra(CHAPTER_SELECTED, mSpineReferenceList.get(mChapterPosition).href);
-                intent.putExtra(FolioReader.INTENT_BOOK_ID, mBookId);
-                intent.putExtra(Constants.BOOK_TITLE, bookFileName);
-                startActivityForResult(intent, ACTION_CONTENT_HIGHLIGHT);
-            }
-        });
 
         mIsNightMode = mConfig.isNightMode();
         if (mIsNightMode) {
             mToolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.black));
             title.setTextColor(ContextCompat.getColor(getActivity(), R.color.white));
         }
-
     }
 
     private void initBook(String mEpubFileName, int mEpubRawId, String mEpubFilePath, EpubReaderFragment.EpubSourceType mEpubSourceType) {
@@ -187,11 +200,12 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
             int portNumber = args.getInt(Config.INTENT_PORT, Constants.PORT_NUMBER);
             mEpubServer = EpubServerSingleton.getEpubServerInstance(portNumber);
             mEpubServer.start();
-            String path = FileUtil.getEpubFromInternalStorage(getActivity(), mEpubFileName);
-            addEpub(path);
+            addEpub(mEpubFilePath);
 
             String urlString = Constants.LOCALHOST + bookFileName + "/manifest";
             new MainPresenter(this).parseManifest(urlString);
+
+            presenter.getTOCContent(urlString);
 
         } catch (IOException e) {
             Log.e(TAG, "initBook failed", e);
@@ -207,6 +221,10 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
     private void getEpubResource() {
     }
 
+    public void setmChapterPosition(int mChapterPosition) {
+        this.mChapterPosition = mChapterPosition;
+    }
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -219,18 +237,21 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
             mFolioPageViewPager.setOnPageChangeListener(new DirectionalViewpager.OnPageChangeListener() {
                 @Override
                 public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
                 }
 
                 @Override
                 public void onPageSelected(int position) {
                     EventBus.getDefault().post(new MediaOverlayPlayPauseEvent(mSpineReferenceList.get(mChapterPosition).href, false, true));
                     mChapterPosition = position;
+                    AppUtil.setGetChapterPosition(mChapterPosition);
                 }
 
                 @Override
                 public void onPageScrollStateChanged(int state) {
                     if (state == DirectionalViewpager.SCROLL_STATE_IDLE) {
                         title.setText(mSpineReferenceList.get(mChapterPosition).bookTitle);
+                        chapterHasChangedListener.chapterHasChanged();
                     }
                 }
             });
@@ -241,7 +262,22 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
                     @Override
                     public void showInterfaceControls() {
                         showInterfacesControls.showInterfaceControls();
-                        Log.d("TESTE2", "AQUI");
+                    }
+                });
+
+                mFolioPageFragmentAdapter.setPageHasChangedListener(new PageHasChangedListener() {
+                    @Override
+                    public void pageHasChanged() {
+                        pageHasChangedListener.pageHasChanged();
+                        Log.d("pageHasChanged", "EpubFragment");
+                    }
+                });
+
+                mFolioPageFragmentAdapter.setPageHasFinishedLoading(new PageHasFinishedLoading() {
+                    @Override
+                    public void pageHasFinishedLoading() {
+                        pageHasFinishedLoading.pageHasFinishedLoading();
+                        Log.d("pageHasFinishedLoading", "EpubFragment");
                     }
                 });
                 mFolioPageViewPager.setAdapter(mFolioPageFragmentAdapter);
@@ -326,7 +362,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
 
     @Override
     public void goToChapter(String href) {
-        href = href.substring(href.indexOf(bookFileName + "/") + bookFileName.length() + 1);
+        /*href = href.substring(href.indexOf(bookFileName + "/") + bookFileName.length() + 1);
         for (Link spine : mSpineReferenceList) {
             if (spine.href.contains(href)) {
                 mChapterPosition = mSpineReferenceList.indexOf(spine);
@@ -334,7 +370,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
                 title.setText(spine.getChapterTitle());
                 break;
             }
-        }
+        }*/
     }
 
     public int getmChapterPosition() {
@@ -384,6 +420,13 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         }
     }
 
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+
     @Override
     public void onStart() {
         super.onStart();
@@ -398,7 +441,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == ACTION_CONTENT_HIGHLIGHT && resultCode == RESULT_OK && data.hasExtra(TYPE)) {
+       /* if (requestCode == ACTION_CONTENT_HIGHLIGHT && resultCode == RESULT_OK && data.hasExtra(TYPE)) {
 
             String type = data.getStringExtra(TYPE);
             if (type.equals(CHAPTER_SELECTED)) {
@@ -418,7 +461,7 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
                 mFolioPageViewPager.setCurrentItem(position);
                 EventBus.getDefault().post(new WebViewPosition(mSpineReferenceList.get(mChapterPosition).href, highlightImpl.getRangy()));
             }
-        }
+        }*/
     }
 
     @Override
@@ -435,10 +478,15 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
     @SuppressWarnings("unused")
     @Subscribe
     public void onPopulateTOCItems(PopulateTOCItems event) {
-        AppUtil.setChapterSelected(mSpineReferenceList.get(mChapterPosition).href);
+        AppUtil.setChapterList(mSpineReferenceList);
         AppUtil.setBookId(mBookId);
         AppUtil.setBookFileName(bookFileName);
     }
@@ -451,9 +499,47 @@ public class EpubReaderFragment extends Fragment implements FolioPageFragment.Fo
             if (selectedChapterHref.contains(spine.href)) {
                 mChapterPosition = mSpineReferenceList.indexOf(spine);
                 mFolioPageViewPager.setCurrentItem(mChapterPosition);
-                EventBus.getDefault().post(new AnchorIdEvent(selectedChapterHref));
                 break;
             }
         }
     }
+
+    @SuppressWarnings("unused")
+    @Subscribe
+    public void onGoToBookMarkEvent(GoToBookMarkEvent event) {
+        String selectedChapterHref = event.getChapterPosition();
+        for (Link spine : mSpineReferenceList) {
+            if (selectedChapterHref.contains(spine.href)) {
+                mChapterPosition = mSpineReferenceList.indexOf(spine);
+                mFolioPageViewPager.setCurrentItem(mChapterPosition);
+                EventBus.getDefault().post(new JumpToBookmarkPage(String.valueOf(mChapterPosition), event.getPageNumber()));
+                break;
+            }
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe
+    public void onJumpToBookmarkPageEvent(JumpToBookmarkPage event) {
+        EventBus.getDefault().post(new GoToPageEvent(event.getPageNumber()));
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe
+    public void onGetTOCLinkWrapper(GetTOCLinkWrapper event) {
+        AppUtil.setTocLinkWrapper(getCurrentChapterReference(event.getHref()));
+    }
+
+    private TOCLinkWrapper getCurrentChapterReference(String SpineItemhref) {
+        if (tocLinkWrapperArrayList != null) {
+            for (TOCLinkWrapper tocLinkWrapper : tocLinkWrapperArrayList) {
+                if (tocLinkWrapper.getTocLink().href.contains(SpineItemhref)) {
+                    return tocLinkWrapper;
+                }
+            }
+        }
+
+        return null;
+    }
+
 }

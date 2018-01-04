@@ -16,6 +16,7 @@ import android.webkit.WebView;
 import com.folioreader.ShowInterfacesControls;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 import com.folioreader.ui.folio.fragment.FolioPageFragment;
+import com.folioreader.util.AppUtil;
 
 public class HorizontalWebView extends WebView {
 
@@ -241,26 +242,25 @@ public class HorizontalWebView extends WebView {
                 Log.d(TAG, "onTouchEvent: LTR ScrollY " + getScrollY());
                 Log.d(TAG, "onTouchEvent: LTR Height" + getContentHeightVal());
 
-                turnPageLeft();
-
-                if (getCurrentPage() > 0) {
+                if (getScrollY() > 0) {
                     turnPageLeft();
                 } else if (getCurrentPage() == 0 && getScrollY() > 0) {
                     scrollTo(0, 0);
                 } else {
                     epubReaderFragment.loadPrevPage();
+                    AppUtil.setGetCurrentchapterPage(1);
                 }
 
                 return true;
             } else if (x >= (screenPartSide + screenPartCenter)) {
                 Log.d(TAG, "onTouchEvent: RTL ScrollY " + getScrollY());
                 Log.d(TAG, "onTouchEvent: RTL Height" + getContentHeightVal());
-                turnPageRight();
 
-                if (getCurrentPage() + 1 < getTotalPages()) {
+                if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
                     turnPageRight();
                 } else {
                     epubReaderFragment.loadNextPage();
+                    AppUtil.setGetCurrentchapterPage(1);
                 }
 
                 return true;
@@ -274,15 +274,11 @@ public class HorizontalWebView extends WebView {
     }
 
     private void turnPageLeft() {
-        int scrollY = getPrevPagePosition();
-        current_y = scrollY;
-
+        int currentPage = getPageIndex();
+        int previousPage = currentPage - getWebviewHeight();
             /*Below condition is to show the first page completely without large padding the content*/
-        if (getCurrentPage() == 1) {
-            scrollTo(0, scrollY);
-        } else {
-            scrollTo(0, scrollY + (PAGE_LEFT_COUNT * PAGE_PADDING));
-        }
+
+        scrollTo(0, previousPage);
 
         PAGE_LEFT_COUNT++;
 
@@ -291,22 +287,23 @@ public class HorizontalWebView extends WebView {
     }
 
     private int getPrevPagePosition() {
-        int prevPage = getCurrentPage() - 1;
+        int prevPage = (int) AppUtil.getPageIndex() - getWebviewHeight();
         Log.d(TAG, "getPrevPagePosition: " + prevPage);
-        return (int) Math.ceil(prevPage * getWebviewHeight());
+        return prevPage;
     }
 
     private void turnPageRight() {
-        int scrollY = getNextPagePosition();
-        current_y = scrollY;
+        int currentPage = getPageIndex();
+        int nextPage = currentPage + getWebviewHeight();
 
-            /*Below condition is to show the last page completely without large padding content*/
+        scrollTo(0, nextPage);
+
+       /*     *//*Below condition is to show the last page completely without large padding content*//*
         if (getCurrentPage() == (getTotalPages() - 1)) {
             scrollTo(0, scrollY);
         } else {
-            scrollTo(0, scrollY - (PAGE_RIGHT_COUNT * PAGE_PADDING));
-        }
-
+            scrollTo(0, scrollY - (PAGE_RIGHT_COUNT));
+        }*/
 
         PAGE_RIGHT_COUNT++;
 
@@ -330,6 +327,16 @@ public class HorizontalWebView extends WebView {
         int totalPages = (int) Math.ceil((double) getContentHeightVal() / getWebviewHeight());
         Log.d(TAG, "getTotalPages: " + totalPages);
         return totalPages;
-
     }
+
+    private int getPageIndex() {
+        //TODO Melhorar essa formular para que aceite inteiros corretamente
+        if (AppUtil.getGetCurrentchapterPage() == 0) {
+            return getWebviewHeight();
+        } else {
+            double scrollToPage = (getWebviewHeight() * (AppUtil.getGetCurrentchapterPage() - 1));
+            return (int) scrollToPage;
+        }
+    }
+
 }

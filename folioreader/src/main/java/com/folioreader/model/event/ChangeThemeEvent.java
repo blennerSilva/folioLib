@@ -7,7 +7,8 @@ package com.folioreader.model.event;
 public class ChangeThemeEvent {
     public enum Theme{
         DAY_THEME,
-        NIGHT_THEME
+        NIGHT_THEME,
+        AFTERNOON_THEME
     }
 
     private Theme theme;

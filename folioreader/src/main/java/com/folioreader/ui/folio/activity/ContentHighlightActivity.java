@@ -75,8 +75,7 @@ public class ContentHighlightActivity extends AppCompatActivity {
     private void loadContentFragment() {
         findViewById(R.id.btn_contents).setSelected(true);
         findViewById(R.id.btn_highlights).setSelected(false);
-        TableOfContentFragment contentFrameLayout
-                = TableOfContentFragment.newInstance(getIntent().getStringExtra(Constants.CHAPTER_SELECTED),
+        TableOfContentFragment contentFrameLayout = TableOfContentFragment.newInstance(getIntent().getStringExtra(Constants.CHAPTER_SELECTED),
                 getIntent().getStringExtra(Constants.BOOK_TITLE));
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.replace(R.id.parent, contentFrameLayout);

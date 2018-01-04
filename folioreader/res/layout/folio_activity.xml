@@ -54,6 +54,7 @@
                     android:layout_marginBottom="16dp"
                     android:layout_marginRight="16dp"
                     android:layout_marginTop="16dp"
+                    android:visibility="gone"
                     android:src="@drawable/ic_drawer_green_24dp" />
             </LinearLayout>
 
@@ -101,16 +102,6 @@
                 android:background="@android:color/black" />
         </RelativeLayout>
     </android.support.v7.widget.Toolbar>
-
-    <ImageView
-        android:id="@+id/btn_drawer2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginTop="16dp"
-        android:src="@drawable/ic_drawer_green_24dp" />
 
     <RelativeLayout
         android:layout_width="match_parent"

@@ -1,5 +1,6 @@
 package comfolioreader.android.sample;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -8,6 +9,11 @@ import android.widget.Toast;
 
 import com.folioreader.ShowInterfacesControls;
 import com.folioreader.util.FolioReader;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class EpubReaderActivity extends AppCompatActivity {
 
@@ -25,13 +31,13 @@ public class EpubReaderActivity extends AppCompatActivity {
         setContentView(R.layout.activity_epub_reader);
 
         folioReader = new FolioReader(this);
-        folioReader.openBook(getFilesDir().getAbsolutePath() + "/" + "blenner.epub", R.id.containerEpub, this);
+        folioReader.openBook("file:///android_asset/adventures.epub", R.id.containerEpub, this);
         folioReader.setCurrentPage(0);
         btnfontSize = findViewById(R.id.btnfontsinze);
         btnfontSize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                folioReader.setFontSize(4);
+                folioReader.goToPage(2);
             }
         });
 
@@ -81,6 +87,7 @@ public class EpubReaderActivity extends AppCompatActivity {
 
     }
 
+
     private void makeButtonsVisible() {
         btnfontSizeMinus.setVisibility(View.VISIBLE);
         btnfontSize.setVisibility(View.VISIBLE);
@@ -99,6 +106,32 @@ public class EpubReaderActivity extends AppCompatActivity {
         btnTemaNght.setVisibility(View.GONE);
         btnCurrentPage.setVisibility(View.GONE);
         isToolbarVisible = false;
+    }
+
+    public File getEpubDownloadFilePath(Context context) {
+        if (context == null) {
+            return null;
+        }
+
+        File downloadDirectoryPath = getDownloadDirectoryPath(context);
+
+        if (downloadDirectoryPath == null) {
+            return null;
+        }
+
+        return new File(downloadDirectoryPath, "TheSilverChair.epub");
+    }
+
+    public File getDownloadDirectoryPath(Context context) {
+        if (context == null) {
+            return null;
+        }
+
+        return new File(String.valueOf(getDownloadsDir(context)));
+    }
+
+    public static File getDownloadsDir(Context context) {
+        return new File(context.getFilesDir(), "downloads");
     }
 
 }

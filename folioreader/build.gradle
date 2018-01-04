@@ -98,7 +98,6 @@ dependencies {
     compile "org.readium:r2-server:$R2_STREAMER_VERSION"
 
     compile 'org.greenrobot:eventbus:3.1.1'
-    compile 'com.github.blennerSilva:AwesomeDialog:2.0.5'
     compile 'com.android.support:support-v4:27.0.2'
 }
 

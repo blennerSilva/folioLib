@@ -10,6 +10,10 @@ public class GoToChapterEvent {
     private  String bookTitle;
     private  String chapterSelected;
 
+    public GoToChapterEvent(String selectedChapterPosition) {
+        this.selectedChapterPosition = selectedChapterPosition;
+    }
+
     public GoToChapterEvent(String selectedChapterPosition, String bookTitle, String chapterSelected) {
         this.selectedChapterPosition = selectedChapterPosition;
         this.bookTitle = bookTitle;

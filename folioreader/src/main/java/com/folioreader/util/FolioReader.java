@@ -6,18 +6,29 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
+import com.folioreader.ChapterHasChangedListener;
+import com.folioreader.PageHasChangedListener;
+import com.folioreader.PageHasFinishedLoading;
 import com.folioreader.ShowInterfacesControls;
 import com.folioreader.model.HighLight;
 import com.folioreader.model.HighlightImpl;
+import com.folioreader.model.TOCLinkWrapper;
 import com.folioreader.model.event.ChangeFontEvent;
 import com.folioreader.model.event.ChangeThemeEvent;
+import com.folioreader.model.event.GetTOCLinkWrapper;
+import com.folioreader.model.event.GoToBookMarkEvent;
+import com.folioreader.model.event.GoToChapterEvent;
+import com.folioreader.model.event.LoadPauseEvent;
+import com.folioreader.model.event.SetWebViewToPositionEvent;
 import com.folioreader.model.sqlite.DbAdapter;
 import com.folioreader.ui.base.OnSaveHighlight;
 import com.folioreader.ui.base.SaveReceivedHighlightTask;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 
 import org.greenrobot.eventbus.EventBus;
+import org.readium.r2_streamer.model.publication.link.Link;
 
 import java.util.List;
 
@@ -31,10 +42,25 @@ public class FolioReader {
 
     private OnHighlightListener onHighlightListener;
     private ShowInterfacesControls showInterfacesControls;
+    private PageHasChangedListener pageHasChangedListener;
+    private ChapterHasChangedListener chapterHasChangedListener;
+    private PageHasFinishedLoading pageHasFinishedLoading;
 
 
     public void showInterfaceControls(ShowInterfacesControls showInterfacesControls) {
         this.showInterfacesControls = showInterfacesControls;
+    }
+
+    public void PageHasChangedListener(PageHasChangedListener pageHasChangedListener) {
+        this.pageHasChangedListener = pageHasChangedListener;
+    }
+
+    public void chapterHasChangedListener(ChapterHasChangedListener chapterHasChangedListener) {
+        this.chapterHasChangedListener = chapterHasChangedListener;
+    }
+
+    public void setPageHasFinishedLoading(PageHasFinishedLoading pageHasFinishedLoading) {
+        this.pageHasFinishedLoading = pageHasFinishedLoading;
     }
 
     public FolioReader(Context context) {
@@ -70,6 +96,31 @@ public class FolioReader {
                 showInterfacesControls.showInterfaceControls();
             }
         });
+
+        epubReaderFragment.setPageHasChangedListener(new PageHasChangedListener() {
+            @Override
+            public void pageHasChanged() {
+                pageHasChangedListener.pageHasChanged();
+                Log.d("pageHasChanged", "FolioReader");
+            }
+        });
+
+        epubReaderFragment.setChapterHasChangedListener(new ChapterHasChangedListener() {
+            @Override
+            public void chapterHasChanged() {
+                chapterHasChangedListener.chapterHasChanged();
+                Log.d("chapterHasChanged", "FolioReader");
+            }
+        });
+
+        epubReaderFragment.setPageHasFinishedLoading(new PageHasFinishedLoading() {
+            @Override
+            public void pageHasFinishedLoading() {
+                pageHasFinishedLoading.pageHasFinishedLoading();
+                Log.d("pageHasFinishedLoading", "FolioReader");
+            }
+        });
+
         android.support.v4.app.FragmentManager fragmentManager = activity.getSupportFragmentManager();
         android.support.v4.app.FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(getContentLayoutToReplace(contentId), epubReaderFragment);
@@ -105,6 +156,10 @@ public class FolioReader {
         EventBus.getDefault().post(new ChangeThemeEvent(ChangeThemeEvent.Theme.DAY_THEME));
     }
 
+    public void setThemeChoiceAfternoon() {
+        EventBus.getDefault().post(new ChangeThemeEvent(ChangeThemeEvent.Theme.AFTERNOON_THEME));
+    }
+
     public void setCurrentPage(int pageIndex) {
         AppUtil.setCurrentPage(pageIndex);
     }
@@ -113,8 +168,12 @@ public class FolioReader {
         return AppUtil.getCurrentPage();
     }
 
-    public String getSpineItem() {
-        return AppUtil.getChapterSelected();
+    public List<Link> getSpineList() {
+        return AppUtil.getChapterList();
+    }
+
+    public int getChapterPosition() {
+        return AppUtil.getChapterPosition();
     }
 
     public String getBookId() {
@@ -123,5 +182,49 @@ public class FolioReader {
 
     public String getBookFileName() {
         return AppUtil.getBookFileName();
+    }
+
+    public void goToChapter(String selectedChapter) {
+        EventBus.getDefault().post(new GoToChapterEvent(selectedChapter));
+    }
+
+    public void goToPage(int position) {
+        EventBus.getDefault().post(new SetWebViewToPositionEvent(position));
+    }
+
+    public int getCurrentChapterPage() {
+        return AppUtil.getGetCurrentchapterPage();
+    }
+
+    public String getChapterName() {
+        return AppUtil.getSpineItemHref();
+    }
+
+    public String getSpineItemHref() {
+        return AppUtil.getSpineItemHref();
+    }
+
+    public String getRangy() {
+        return AppUtil.getRangy();
+    }
+
+    public String getCurrentChapterName() {
+        return AppUtil.getCurrentChapterName();
+    }
+
+    public void generateTOCLinkWrapper(String spineItemHref) {
+        EventBus.getDefault().post(new GetTOCLinkWrapper(spineItemHref));
+    }
+
+    public TOCLinkWrapper getTOCLinkWrapper() {
+        return AppUtil.getTocLinkWrapper();
+    }
+
+    public void goToBookmark(String chapter, int pageNumber) {
+        EventBus.getDefault().post(new GoToBookMarkEvent(chapter, pageNumber));
+    }
+
+    public void loadPause(String chapter, int pageNumber){
+        EventBus.getDefault().post(new LoadPauseEvent(chapter, pageNumber));
     }
 }

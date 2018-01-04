@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -15,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,15 +30,17 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
 
-import com.awesomedialog.blennersilva.awesomedialoglibrary.AwesomeProgressDialog;
-import com.folioreader.ShowInterfacesControls;
 import com.folioreader.Config;
 import com.folioreader.Constants;
+import com.folioreader.PageHasChangedListener;
+import com.folioreader.PageHasFinishedLoading;
 import com.folioreader.R;
+import com.folioreader.ShowInterfacesControls;
 import com.folioreader.model.HighLight;
 import com.folioreader.model.HighlightImpl;
 import com.folioreader.model.event.ChangeFontEvent;
 import com.folioreader.model.event.ChangeThemeEvent;
+import com.folioreader.model.event.GoToPageEvent;
 import com.folioreader.model.event.JumpToAnchorPoint;
 import com.folioreader.model.event.MediaOverlayHighlightStyleEvent;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
@@ -48,6 +48,7 @@ import com.folioreader.model.event.MediaOverlaySpeedEvent;
 import com.folioreader.model.event.PopulateTOCItems;
 import com.folioreader.model.event.ReloadDataEvent;
 import com.folioreader.model.event.RewindIndexEvent;
+import com.folioreader.model.event.SetWebViewToPositionEvent;
 import com.folioreader.model.event.WebViewPosition;
 import com.folioreader.model.sqlite.HighLightTable;
 import com.folioreader.ui.base.HtmlTask;
@@ -97,8 +98,9 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private String rangy = "";
     private String highlightId;
     private boolean mIsNightMode = false;
-    private AwesomeProgressDialog awesomeProgressDialog;
     private ShowInterfacesControls showInterfacesControls;
+    private PageHasChangedListener pageHasChangedListener;
+    private PageHasFinishedLoading pageHasFinishedLoading;
 
     public interface FolioPageFragmentCallback {
 
@@ -111,6 +113,14 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
     public void setShowInterfacesControls(ShowInterfacesControls showInterfacesControls) {
         this.showInterfacesControls = showInterfacesControls;
+    }
+
+    public void setPageHasChangedListener(PageHasChangedListener pageHasChangedListener) {
+        this.pageHasChangedListener = pageHasChangedListener;
+    }
+
+    public void setPageHasFinishedLoading(PageHasFinishedLoading pageHasFinishedLoading) {
+        this.pageHasFinishedLoading = pageHasFinishedLoading;
     }
 
     private View mRootView;
@@ -139,7 +149,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private MediaController mediaController;
     private Config mConfig;
     private String mBookId;
-    private static boolean isFirstDialog;
 
     public void setEpubReaderFragment(EpubReaderFragment epubReaderFragment) {
         this.epubReaderFragment = epubReaderFragment;
@@ -188,12 +197,8 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
         highlightStyle = HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.Normal);
         mRootView = View.inflate(getActivity(), R.layout.folio_page_fragment, null);
-        mPagesLeftTextView = (TextView) mRootView.findViewById(R.id.pagesLeft);
-        mMinutesLeftTextView = (TextView) mRootView.findViewById(R.id.minutesLeft);
-        awesomeProgressDialog = new AwesomeProgressDialog(getActivity());
 
         Activity activity = getActivity();
-
         mConfig = AppUtil.getSavedConfig(activity);
 
         if (activity instanceof FolioPageFragmentCallback)
@@ -202,7 +207,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         initSeekbar();
         initAnimations();
         initWebView();
-        updatePagesLeftTextBg();
 
         return mRootView;
     }
@@ -271,7 +275,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             mLastWebviewScrollpos = mWebview.getScrollY();
             mIsPageReloaded = true;
             setHtml(true);
-            updatePagesLeftTextBg();
         }
     }
 
@@ -428,11 +431,13 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     if (isAdded()) {
                         epubReaderFragment.setLastWebViewPosition(mScrollY);
                         getPageIndex();
+                        updatePagesLeftText(percent);
+                        AppUtil.setGetCurrentchapterPage(percent);
                     }
                 }
-                mScrollSeekbar.setProgressAndThumb(percent);
+
                 updatePagesLeftText(percent);
-                getPageIndex();
+                pageHasChangedListener.pageHasChanged();
             }
         });
 
@@ -440,27 +445,17 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (isAdded()) {
-                    if (mAnchorId != null)
-                        view.loadUrl("javascript:document.getElementById(\"" + mAnchorId + "\").scrollIntoView()");
-                    view.loadUrl("javascript:alert(getReadingTime())");
-                    if (!hasMediaOverlay) {
-                        view.loadUrl("javascript:alert(wrappingSentencesWithinPTags())");
-                    }
-                    view.loadUrl(String.format(getString(R.string.setmediaoverlaystyle),
-                            HighlightImpl.HighlightStyle.classForStyle(HighlightImpl.HighlightStyle.Normal)));
                     if (isCurrentFragment()) {
                         setWebViewPosition(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                        AppUtil.setGetCurrentchapterPage(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                        pageHasFinishedLoading.pageHasFinishedLoading();
                     } else if (mIsPageReloaded) {
                         setWebViewPosition(mLastWebviewScrollpos);
+                        pageHasFinishedLoading.pageHasFinishedLoading();
+                        AppUtil.setGetCurrentchapterPage(mLastWebviewScrollpos);
                         mIsPageReloaded = false;
                     }
-                    String rangy = HighlightUtil.generateRangyString(getPageName());
-                    FolioPageFragment.this.rangy = rangy;
-                    if (!rangy.isEmpty()) {
-                        loadRangy(view, rangy);
-                    }
 
-                    scrollToHighlightId();
                     EventBus.getDefault().post(new PopulateTOCItems());
                 }
             }
@@ -484,9 +479,9 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         }
                     } else {
                         if (url.contains("storage")) {
-                            mActivityCallback.setPagerToPosition(url);
+                            //  mActivityCallback.setPagerToPosition(url);
                         } else if (url.endsWith(".xhtml") || url.endsWith(".html")) {
-                            mActivityCallback.goToChapter(url);
+                            // mActivityCallback.goToChapter(url);
                         } else {
                             // Otherwise, give the default behavior (open in browser)
                             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -530,18 +525,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         mWebview.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int progress) {
-
                 if (view.getProgress() == 100) {
                     mWebview.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             Log.d("scroll y", "Scrolly" + mScrollY);
-
-                            if (getPageIndex() > 0) {
-                                mWebview.scrollTo(0, getPageIndex());
-                            } else {
-                                mWebview.scrollTo(0, 0);
-                            }
+                            mWebview.scrollTo(0, mScrollY);
                         }
                     }, 100);
                 }
@@ -550,7 +539,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
             @Override
             public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-                if (FolioPageFragment.this.isVisible()) {
+               /* if (FolioPageFragment.this.isVisible()) {
                     String rangyPattern = "\\d+\\$\\d+\\$\\d+\\$\\w+\\$";
                     Pattern pattern = Pattern.compile(rangyPattern);
                     Matcher matcher = pattern.matcher(message);
@@ -558,7 +547,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         HighlightImpl highlightImpl = HighLightTable.getHighlightForRangy(message);
                         if (HighLightTable.deleteHighlight(message)) {
                             String rangy = HighlightUtil.generateRangyString(getPageName());
-                            loadRangy(view, rangy);
+                           // loadRangy(view, rangy);
                             if (highlightImpl != null) {
                                 HighlightUtil.sendHighlightBroadcastEvent(
                                         FolioPageFragment.this.getActivity().getApplicationContext(),
@@ -585,7 +574,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         }
                     }
                     result.confirm();
-                }
+                }*/
                 return true;
             }
         });
@@ -613,7 +602,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         PorterDuff.Mode.SRC_IN);
     }
 
-    private void updatePagesLeftTextBg() {
+    /*private void updatePagesLeftTextBg() {
         if (mConfig.isNightMode()) {
             mRootView.findViewById(R.id.indicatorLayout)
                     .setBackgroundColor(Color.parseColor("#131313"));
@@ -622,7 +611,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     .setBackgroundColor(Color.WHITE);
         }
     }
-
+*/
     private void updatePagesLeftText(int scrollY) {
         try {
             int currentPage = (int) (Math.ceil((double) scrollY / mWebview.getWebviewHeight()) + 1);
@@ -645,9 +634,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 minutesRemainingStr = getString(R.string.less_than_minute);
             }
 
-            mMinutesLeftTextView.setText(minutesRemainingStr);
-            mPagesLeftTextView.setText(pagesRemainingStr);
-            AppUtil.setCurrentPage(currentPage);
+            AppUtil.setGetCurrentchapterPage(currentPage);
         } catch (java.lang.ArithmeticException exp) {
             Log.d("divide error", exp.toString());
         }
@@ -733,9 +720,9 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
     @Override
     public void resetCurrentIndex() {
-        if (isCurrentFragment()) {
+        /*if (isCurrentFragment()) {
             mWebview.loadUrl("javascript:alert(rewindCurrentIndex())");
-        }
+        }*/
     }
 
     @SuppressWarnings("unused")
@@ -751,7 +738,15 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         }
     }
 
+
     private String getPageName() {
+        return mBookTitle + "$" + spineItem.href;
+    }
+
+    private String getChapterName(String rangy) {
+        AppUtil.setSpineItemHref(spineItem.href);
+        AppUtil.setBookTile(mBookTitle);
+        AppUtil.setRangy(rangy);
         return mBookTitle + "$" + spineItem.href;
     }
 
@@ -768,20 +763,19 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         }
     }
 
-    public void setWebViewPosition(final int position) {
-        mWebview.post(new Runnable() {
-            @Override
-            public void run() {
-                if (isAdded()) {
-                    if (getPageIndex() > 0) {
-                        mWebview.scrollTo(0, getPageIndex());
-                    } else {
-                        mWebview.scrollTo(0, 0);
-                    }
-                }
-            }
-        });
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.POSTING, sticky = true)
+    public void onGoToPage(final GoToPageEvent event) {
+       setChapterPagePosition(event.getPageNumber());
+       EventBus.getDefault().removeStickyEvent(true);
     }
+
+
+    public void setChapterPagePosition(final int position) {
+        AppUtil.setGetCurrentchapterPage(position);
+        mWebview.scrollTo(0, getPageIndex());
+    }
+
 
     @Override
     public void highLightText(String fragmentId) {
@@ -806,7 +800,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             final String rangyString = HighlightUtil.generateRangyString(getPageName());
             getActivity().runOnUiThread(new Runnable() {
                 public void run() {
-                    loadRangy(mWebview, rangyString);
+                    // loadRangy(mWebview, rangyString);
                 }
             });
 
@@ -866,19 +860,27 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         }
     }
 
-    private void showProgressDialog() {
-        if (isFirstDialog) {
-            return;
-        }
-
-        isFirstDialog = true;
-        awesomeProgressDialog.show();
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onSetWebViewToPositionEvent(final SetWebViewToPositionEvent event) {
+        // setWebViewPosition(event.getPosition());
     }
 
     private int getPageIndex() {
         //TODO Melhorar essa formular para que aceite inteiros corretamente
-        double scrollToPage = (mWebview.getWebviewHeight() * (AppUtil.getCurrentPage() - 1));
+        double scrollToPage = (mWebview.getWebviewHeight() * (AppUtil.getGetCurrentchapterPage() - 1));
         return (int) scrollToPage;
+    }
+
+    public void setWebViewPosition(final int position) {
+        mWebview.post(new Runnable() {
+            @Override
+            public void run() {
+                if (isAdded()) {
+                    mWebview.scrollTo(0, position);
+                }
+            }
+        });
     }
 
 }

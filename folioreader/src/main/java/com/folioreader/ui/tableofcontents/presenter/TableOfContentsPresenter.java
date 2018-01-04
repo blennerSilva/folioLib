@@ -49,7 +49,7 @@ public class TableOfContentsPresenter implements ManifestCallBack {
         return tocLinkWrapper;
     }
 
-    private static ArrayList<TOCLinkWrapper> createTOCFromSpine(List<Link> spine) {
+    public static ArrayList<TOCLinkWrapper> createTOCFromSpine(List<Link> spine) {
         ArrayList<TOCLinkWrapper> tocLinkWrappers = new ArrayList<>();
         for (Link link : spine) {
             TOCLink tocLink = new TOCLink();

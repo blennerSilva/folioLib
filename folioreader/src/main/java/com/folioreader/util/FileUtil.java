@@ -96,9 +96,7 @@ public class FileUtil {
         }
     }
 
-    public static String getEpubFilename(Context context, EpubReaderFragment.EpubSourceType epubSourceType,
-                                         String epubFilePath, int epubRawId) {
-        String epubFileName;
+    public static String getEpubFilename(Context context, EpubReaderFragment.EpubSourceType epubSourceType, String epubFilePath, int epubRawId) {String epubFileName;
         if (epubSourceType.equals(EpubReaderFragment.EpubSourceType.RAW)) {
             Resources res = context.getResources();
             epubFileName = res.getResourceEntryName(epubRawId);
