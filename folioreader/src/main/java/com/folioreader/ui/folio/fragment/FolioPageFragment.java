@@ -432,7 +432,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         epubReaderFragment.setLastWebViewPosition(mScrollY);
                         getPageIndex();
                         updatePagesLeftText(percent);
-                        AppUtil.setGetCurrentchapterPage(percent);
+                        AppUtil.setCurrentchapterPage(percent);
                     }
                 }
 
@@ -446,13 +446,23 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             public void onPageFinished(WebView view, String url) {
                 if (isAdded()) {
                     if (isCurrentFragment()) {
-                        setWebViewPosition(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
-                        AppUtil.setGetCurrentchapterPage(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                        if (AppUtil.isComeFromChapterList()) {
+                            setWebViewPosition(0);
+                            AppUtil.setCurrentchapterPage(1);
+                            AppUtil.setComeFromChapterList(false);
+                        } else if (AppUtil.isComeFromBookmark()) {
+                            setWebViewPosition(AppUtil.getGetCurrentchapterPage());
+                            AppUtil.setComeFromBookmark(false);
+                        } else {
+                            setWebViewPosition(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                            AppUtil.setCurrentchapterPage(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                        }
+
                         pageHasFinishedLoading.pageHasFinishedLoading();
                     } else if (mIsPageReloaded) {
                         setWebViewPosition(mLastWebviewScrollpos);
                         pageHasFinishedLoading.pageHasFinishedLoading();
-                        AppUtil.setGetCurrentchapterPage(mLastWebviewScrollpos);
+                        AppUtil.setCurrentchapterPage(mLastWebviewScrollpos);
                         mIsPageReloaded = false;
                     }
 
@@ -634,7 +644,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 minutesRemainingStr = getString(R.string.less_than_minute);
             }
 
-            AppUtil.setGetCurrentchapterPage(currentPage);
+            AppUtil.setCurrentchapterPage(currentPage);
         } catch (java.lang.ArithmeticException exp) {
             Log.d("divide error", exp.toString());
         }
@@ -766,13 +776,13 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.POSTING, sticky = true)
     public void onGoToPage(final GoToPageEvent event) {
-       setChapterPagePosition(event.getPageNumber());
-       EventBus.getDefault().removeStickyEvent(true);
+        setChapterPagePosition(event.getPageNumber());
+        EventBus.getDefault().removeStickyEvent(true);
     }
 
 
     public void setChapterPagePosition(final int position) {
-        AppUtil.setGetCurrentchapterPage(position);
+        AppUtil.setCurrentchapterPage(position);
         mWebview.scrollTo(0, getPageIndex());
     }
 
@@ -873,14 +883,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     }
 
     public void setWebViewPosition(final int position) {
-        mWebview.post(new Runnable() {
-            @Override
-            public void run() {
-                if (isAdded()) {
-                    mWebview.scrollTo(0, position);
-                }
-            }
-        });
+        mWebview.scrollTo(0, getPageIndex());
     }
 
 }

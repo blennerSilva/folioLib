@@ -227,4 +227,8 @@ public class FolioReader {
     public void loadPause(String chapter, int pageNumber){
         EventBus.getDefault().post(new LoadPauseEvent(chapter, pageNumber));
     }
+
+    public void setCurrentChapterPage(int page){
+        AppUtil.setCurrentchapterPage(page);
+    }
 }

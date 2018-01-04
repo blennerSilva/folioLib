@@ -51,7 +51,8 @@ public class AppUtil {
     private static String currentChapterName;
     private static TOCLinkWrapper tocLinkWrapper;
     private static double pageIndex;
-    private  static boolean comeFromBookmark = false;
+    private static boolean comeFromBookmark = false;
+    private static boolean comeFromChapterList = false;
 
     private enum FileType {
         OPS,
@@ -65,16 +66,16 @@ public class AppUtil {
             JSONArray jsonArray = new JSONArray(jsonString);
             JSONObject jObject = jsonArray.getJSONObject(0);
             Iterator<String> keysItr = jObject.keys();
-        while(keysItr.hasNext()) {
-            String key = keysItr.next();
-            Object value = null;
-            value = jObject.get(key);
+            while (keysItr.hasNext()) {
+                String key = keysItr.next();
+                Object value = null;
+                value = jObject.get(key);
 
-            if(value instanceof JSONObject) {
-                value = toMap(value.toString());
+                if (value instanceof JSONObject) {
+                    value = toMap(value.toString());
+                }
+                map.put(key, value.toString());
             }
-            map.put(key, value.toString());
-        }
         } catch (JSONException e) {
             Log.e(TAG, "toMap failed", e);
         }
@@ -181,7 +182,7 @@ public class AppUtil {
             obj.put(Config.CONFIG_FONT_SIZE, config.getFontSize());
             obj.put(Config.CONFIG_IS_NIGHTMODE, config.isNightMode());
             obj.put(Config.CONFIG_IS_THEMECOLOR, config.getThemeColor());
-            obj.put(Config.CONFIG_IS_TTS,config.isShowTts());
+            obj.put(Config.CONFIG_IS_TTS, config.isShowTts());
             SharedPreferenceUtil.putSharedPreferencesString(context, Config.INTENT_CONFIG, obj.toString());
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage());
@@ -262,7 +263,7 @@ public class AppUtil {
         return getCurrentchapterPage;
     }
 
-    public static void setGetCurrentchapterPage(int getCurrentchapterPage) {
+    public static void setCurrentchapterPage(int getCurrentchapterPage) {
         AppUtil.getCurrentchapterPage = getCurrentchapterPage;
     }
 
@@ -320,6 +321,14 @@ public class AppUtil {
 
     public static void setComeFromBookmark(boolean comeFromBookmark) {
         AppUtil.comeFromBookmark = comeFromBookmark;
+    }
+
+    public static boolean isComeFromChapterList() {
+        return comeFromChapterList;
+    }
+
+    public static void setComeFromChapterList(boolean comeFromChapterList) {
+        AppUtil.comeFromChapterList = comeFromChapterList;
     }
 }
 

@@ -9,11 +9,11 @@ import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
 
 import com.folioreader.ShowInterfacesControls;
+import com.folioreader.TouchDetector;
 import com.folioreader.ui.folio.fragment.EpubReaderFragment;
 import com.folioreader.ui.folio.fragment.FolioPageFragment;
 import com.folioreader.util.AppUtil;
@@ -24,6 +24,7 @@ public class HorizontalWebView extends WebView {
     private ToolBarListener mToolBarListener;
     private ScrollListener mScrollListener;
     ShowInterfacesControls showInterfacesControls;
+    private TouchDetector touchDetector;
 
     public interface ScrollListener {
         void onScrollChange(int percent);
@@ -71,19 +72,23 @@ public class HorizontalWebView extends WebView {
 
     public HorizontalWebView(Context context) {
         super(context);
+        iniciateTouchDetector();
     }
 
     public HorizontalWebView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        iniciateTouchDetector();
     }
 
     public HorizontalWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        iniciateTouchDetector();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public HorizontalWebView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
+        iniciateTouchDetector();
     }
 
 
@@ -173,64 +178,7 @@ public class HorizontalWebView extends WebView {
         this.epubReaderFragment = epubReaderFragment;
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        mActivityCallback = epubReaderFragment;
-        int action = event.getAction();
-        int positionScroll = 0;
-        switch (action) {
-            case (MotionEvent.ACTION_DOWN):
-                /**
-                 * get X and Y position
-                 */
-                start_x = event.getX();
-                start_y = event.getY();
-                break;
-            case (MotionEvent.ACTION_MOVE):
-                if (getParent() != null) {
-                    getParent().requestDisallowInterceptTouchEvent(true);
-                }
-
-                if (start_y - event.getY() > 20 || start_y - event.getY() < -20)
-                    return true;
-                else
-
-                    break;
-
-            case (MotionEvent.ACTION_UP):
-                 /*right to left*/
-                upX = event.getX();
-                upY = event.getY();
-
-                float deltaX = start_x - upX;
-                float deltaY = start_y - upY;
-
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    // HORIZONTAL SCROLL
-
-                    if (Math.abs(deltaX) > 100) {
-                        // left or right
-                        if (deltaX < 0) {
-                            //this.onLeftToRightSwipe();
-                            return true;
-                        }
-
-                        if (deltaX > 0) {
-                            //this.onRightToLeftSwipe();
-                            return true;
-                        }
-                    } else {
-                        return onTap(getRootView(), event);
-                    }
-                }
-
-                showInterfacesControls.showInterfaceControls();
-                break;
-        }
-        return super.onTouchEvent(event);
-    }
-
-    private boolean onTap(View v, MotionEvent event) {
+   /* private boolean onTap(View v, MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_UP) {
             float x = event.getX();
             float viewWidth = v.getWidth();
@@ -248,7 +196,7 @@ public class HorizontalWebView extends WebView {
                     scrollTo(0, 0);
                 } else {
                     epubReaderFragment.loadPrevPage();
-                    AppUtil.setGetCurrentchapterPage(1);
+                    AppUtil.setCurrentchapterPage(0);
                 }
 
                 return true;
@@ -260,7 +208,7 @@ public class HorizontalWebView extends WebView {
                     turnPageRight();
                 } else {
                     epubReaderFragment.loadNextPage();
-                    AppUtil.setGetCurrentchapterPage(1);
+                    AppUtil.setCurrentchapterPage(0);
                 }
 
                 return true;
@@ -271,7 +219,7 @@ public class HorizontalWebView extends WebView {
         }
 
         return false;
-    }
+    }*/
 
     private void turnPageLeft() {
         int currentPage = getPageIndex();
@@ -297,13 +245,6 @@ public class HorizontalWebView extends WebView {
         int nextPage = currentPage + getWebviewHeight();
 
         scrollTo(0, nextPage);
-
-       /*     *//*Below condition is to show the last page completely without large padding content*//*
-        if (getCurrentPage() == (getTotalPages() - 1)) {
-            scrollTo(0, scrollY);
-        } else {
-            scrollTo(0, scrollY - (PAGE_RIGHT_COUNT));
-        }*/
 
         PAGE_RIGHT_COUNT++;
 
@@ -337,6 +278,53 @@ public class HorizontalWebView extends WebView {
             double scrollToPage = (getWebviewHeight() * (AppUtil.getGetCurrentchapterPage() - 1));
             return (int) scrollToPage;
         }
+    }
+
+    private void iniciateTouchDetector() {
+        touchDetector = new TouchDetector(this);
+        touchDetector.setListener(new TouchDetector.OnTouchEventListener() {
+            @Override
+            public void onTouchEventDetected(View v, TouchDetector.TouchTypeEnum touchType) {
+                if (touchType.equals(TouchDetector.TouchTypeEnum.LEFT_TO_RIGHT)) {
+                    if (getScrollY() > 0) {
+                        turnPageLeft();
+                    } else if (getCurrentPage() == 0 && getScrollY() > 0) {
+                        scrollTo(0, 0);
+                    } else {
+                        epubReaderFragment.loadPrevPage();
+                        AppUtil.setCurrentchapterPage(0);
+                    }
+                } else if (touchType.equals(TouchDetector.TouchTypeEnum.RIGHT_TO_LEFT)) {
+
+                    if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
+                        turnPageRight();
+                    } else {
+                        epubReaderFragment.loadNextPage();
+                        AppUtil.setCurrentchapterPage(0);
+                    }
+                } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_LEFT)) {
+                    if (getScrollY() > 0) {
+                        turnPageLeft();
+                    } else if (getCurrentPage() == 0 && getScrollY() > 0) {
+                        scrollTo(0, 0);
+                    } else {
+                        epubReaderFragment.loadPrevPage();
+                        AppUtil.setCurrentchapterPage(0);
+                    }
+                } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_RIGHT)) {
+
+                    if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
+                        turnPageRight();
+                    } else {
+                        epubReaderFragment.loadNextPage();
+                        AppUtil.setCurrentchapterPage(0);
+                    }
+                } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_CENTER)) {
+                    showInterfacesControls.showInterfaceControls();
+                }
+
+            }
+        });
     }
 
 }
