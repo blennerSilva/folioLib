@@ -101,6 +101,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private ShowInterfacesControls showInterfacesControls;
     private PageHasChangedListener pageHasChangedListener;
     private PageHasFinishedLoading pageHasFinishedLoading;
+    private int totalPages;
 
     public interface FolioPageFragmentCallback {
 
@@ -367,7 +368,13 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                 mediaController.setUpMediaPlayer(spineItem.mediaOverlay, spineItem.mediaOverlay.getAudioPath(spineItem.href), mBookTitle);
             }
             mConfig = AppUtil.getSavedConfig(getActivity());
-            String path = ref.substring(0, ref.lastIndexOf('/'));
+            String path = "";
+            if (ref.contains("OEBPS/Text/")) {
+                path = ref.substring(0, ref.lastIndexOf('/'));
+            } else {
+                String pathModified = "OEBPS/Text/" + ref;
+                path = pathModified.substring(0, pathModified.lastIndexOf('/'));
+            }
             mWebview.loadDataWithBaseURL(
                     Constants.LOCALHOST + mBookTitle + "/" + path + "/",
                     HtmlUtil.getHtmlContent(getActivity(), mHtmlString, mConfig),
@@ -390,6 +397,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         mWebview.setFragment(epubReaderFragment);
         mWebview.setVerticalScrollBarEnabled(false);
         mWebview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
+        Log.d("CONTENTHEIGHT", "Altura" + mWebview.getContentHeightVal());
 
         if (getActivity() instanceof HorizontalWebView.ToolBarListener)
             mWebview.setToolBarListener((HorizontalWebView.ToolBarListener) getActivity());
@@ -450,19 +458,28 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                             setWebViewPosition(0);
                             AppUtil.setCurrentchapterPage(1);
                             AppUtil.setComeFromChapterList(false);
+                            AppUtil.setComeFromInternalChange(true);
+                            updatePagesLeftText(0);
                         } else if (AppUtil.isComeFromBookmark()) {
                             setWebViewPosition(AppUtil.getGetCurrentchapterPage());
+                            AppUtil.setComeFromInternalChange(true);
                             AppUtil.setComeFromBookmark(false);
+                            updatePagesLeftText(mScrollY);
                         } else {
                             setWebViewPosition(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
                             AppUtil.setCurrentchapterPage(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
                         }
 
                         pageHasFinishedLoading.pageHasFinishedLoading();
+
+                        if (mWebview.getContentHeightVal() == 0) {
+                            mWebview.turnPageLeft();
+                        }
                     } else if (mIsPageReloaded) {
                         setWebViewPosition(mLastWebviewScrollpos);
                         pageHasFinishedLoading.pageHasFinishedLoading();
                         AppUtil.setCurrentchapterPage(mLastWebviewScrollpos);
+                        updatePagesLeftText(mLastWebviewScrollpos);
                         mIsPageReloaded = false;
                     }
 
@@ -549,42 +566,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
             @Override
             public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-               /* if (FolioPageFragment.this.isVisible()) {
-                    String rangyPattern = "\\d+\\$\\d+\\$\\d+\\$\\w+\\$";
-                    Pattern pattern = Pattern.compile(rangyPattern);
-                    Matcher matcher = pattern.matcher(message);
-                    if (matcher.matches()) {
-                        HighlightImpl highlightImpl = HighLightTable.getHighlightForRangy(message);
-                        if (HighLightTable.deleteHighlight(message)) {
-                            String rangy = HighlightUtil.generateRangyString(getPageName());
-                           // loadRangy(view, rangy);
-                            if (highlightImpl != null) {
-                                HighlightUtil.sendHighlightBroadcastEvent(
-                                        FolioPageFragment.this.getActivity().getApplicationContext(),
-                                        highlightImpl,
-                                        HighLight.HighLightAction.DELETE);
-                            }
-                        }
-                    } else if (TextUtils.isDigitsOnly(message)) {
-                        mTotalMinutes = Integer.parseInt(message);
-                    } else {
-                        pattern = Pattern.compile(getString(R.string.pattern));
-                        matcher = pattern.matcher(message);
-                        if (matcher.matches()) {
-                            double left = Double.parseDouble(matcher.group(1));
-                            double top = Double.parseDouble(matcher.group(2));
-                            double width = Double.parseDouble(matcher.group(3));
-                            double height = Double.parseDouble(matcher.group(4));
-                        } else {
-                            // to handle TTS playback when highlight is deleted.
-                            Pattern p = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}");
-                            if (!p.matcher(message).matches() && (!message.equals("undefined")) && isCurrentFragment()) {
-                                mediaController.speakAudio(message);
-                            }
-                        }
-                    }
-                    result.confirm();
-                }*/
                 return true;
             }
         });
@@ -612,39 +593,17 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                         PorterDuff.Mode.SRC_IN);
     }
 
-    /*private void updatePagesLeftTextBg() {
-        if (mConfig.isNightMode()) {
-            mRootView.findViewById(R.id.indicatorLayout)
-                    .setBackgroundColor(Color.parseColor("#131313"));
-        } else {
-            mRootView.findViewById(R.id.indicatorLayout)
-                    .setBackgroundColor(Color.WHITE);
-        }
-    }
-*/
     private void updatePagesLeftText(int scrollY) {
         try {
             int currentPage = (int) (Math.ceil((double) scrollY / mWebview.getWebviewHeight()) + 1);
-            int totalPages = (int) Math.ceil((double) mWebview.getContentHeightVal() / mWebview.getWebviewHeight());
-            int pagesRemaining = totalPages - currentPage;
-            String pagesRemainingStrFormat = pagesRemaining > 1 ? getString(R.string.pages_left) : getString(R.string.page_left);
-            String pagesRemainingStr = String.format(Locale.US, pagesRemainingStrFormat, pagesRemaining);
-            int minutesRemaining =
-                    (int) Math.ceil((double) (pagesRemaining * mTotalMinutes) / totalPages);
-            String minutesRemainingStr;
-            if (minutesRemaining > 1) {
-                minutesRemainingStr =
-                        String.format(Locale.US, getString(R.string.minutes_left),
-                                minutesRemaining);
-            } else if (minutesRemaining == 1) {
-                minutesRemainingStr =
-                        String.format(Locale.US, getString(R.string.minute_left),
-                                minutesRemaining);
-            } else {
-                minutesRemainingStr = getString(R.string.less_than_minute);
-            }
+            totalPages = (int) Math.ceil((double) mWebview.getContentHeightVal() / mWebview.getWebviewHeight());
 
-            AppUtil.setCurrentchapterPage(currentPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+                AppUtil.setCurrentchapterPage(currentPage);
+            } else {
+                AppUtil.setCurrentchapterPage(currentPage);
+            }
         } catch (java.lang.ArithmeticException exp) {
             Log.d("divide error", exp.toString());
         }
@@ -882,7 +841,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         return (int) scrollToPage;
     }
 
+    private int getTotalPages() {
+        return (int) Math.ceil((double) mWebview.getContentHeightVal() / mWebview.getWebviewHeight());
+    }
+
     public void setWebViewPosition(final int position) {
+        Log.d("TotalPages", String.valueOf(totalPages));
         mWebview.scrollTo(0, getPageIndex());
     }
 

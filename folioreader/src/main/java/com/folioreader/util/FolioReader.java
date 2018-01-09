@@ -224,11 +224,15 @@ public class FolioReader {
         EventBus.getDefault().post(new GoToBookMarkEvent(chapter, pageNumber));
     }
 
-    public void loadPause(String chapter, int pageNumber){
+    public void loadPause(String chapter, int pageNumber) {
         EventBus.getDefault().post(new LoadPauseEvent(chapter, pageNumber));
     }
 
-    public void setCurrentChapterPage(int page){
+    public void setCurrentChapterPage(int page) {
         AppUtil.setCurrentchapterPage(page);
+    }
+
+    public boolean forceLoadPause() {
+        return AppUtil.isComeFromInternalChange();
     }
 }

@@ -178,50 +178,7 @@ public class HorizontalWebView extends WebView {
         this.epubReaderFragment = epubReaderFragment;
     }
 
-   /* private boolean onTap(View v, MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_UP) {
-            float x = event.getX();
-            float viewWidth = v.getWidth();
-
-            float screenPartSide = ((viewWidth * 30) / 100);
-            float screenPartCenter = ((viewWidth * 40) / 100);
-
-            if (x <= screenPartSide) {
-                Log.d(TAG, "onTouchEvent: LTR ScrollY " + getScrollY());
-                Log.d(TAG, "onTouchEvent: LTR Height" + getContentHeightVal());
-
-                if (getScrollY() > 0) {
-                    turnPageLeft();
-                } else if (getCurrentPage() == 0 && getScrollY() > 0) {
-                    scrollTo(0, 0);
-                } else {
-                    epubReaderFragment.loadPrevPage();
-                    AppUtil.setCurrentchapterPage(0);
-                }
-
-                return true;
-            } else if (x >= (screenPartSide + screenPartCenter)) {
-                Log.d(TAG, "onTouchEvent: RTL ScrollY " + getScrollY());
-                Log.d(TAG, "onTouchEvent: RTL Height" + getContentHeightVal());
-
-                if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
-                    turnPageRight();
-                } else {
-                    epubReaderFragment.loadNextPage();
-                    AppUtil.setCurrentchapterPage(0);
-                }
-
-                return true;
-            } else {
-                // this.onTapCenter();
-                return true;
-            }
-        }
-
-        return false;
-    }*/
-
-    private void turnPageLeft() {
+    public void turnPageLeft() {
         int currentPage = getPageIndex();
         int previousPage = currentPage - getWebviewHeight();
             /*Below condition is to show the first page completely without large padding the content*/
@@ -234,12 +191,6 @@ public class HorizontalWebView extends WebView {
             PAGE_RIGHT_COUNT--;
     }
 
-    private int getPrevPagePosition() {
-        int prevPage = (int) AppUtil.getPageIndex() - getWebviewHeight();
-        Log.d(TAG, "getPrevPagePosition: " + prevPage);
-        return prevPage;
-    }
-
     private void turnPageRight() {
         int currentPage = getPageIndex();
         int nextPage = currentPage + getWebviewHeight();
@@ -250,12 +201,6 @@ public class HorizontalWebView extends WebView {
 
         if (PAGE_LEFT_COUNT > 3)
             PAGE_LEFT_COUNT--;
-    }
-
-    private int getNextPagePosition() {
-        int nextPage = getCurrentPage() + 1;
-        Log.d(TAG, "getNextPagePosition: " + nextPage);
-        return (int) Math.ceil(nextPage * getWebviewHeight());
     }
 
     public int getCurrentPage() {
@@ -322,7 +267,6 @@ public class HorizontalWebView extends WebView {
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_CENTER)) {
                     showInterfacesControls.showInterfaceControls();
                 }
-
             }
         });
     }

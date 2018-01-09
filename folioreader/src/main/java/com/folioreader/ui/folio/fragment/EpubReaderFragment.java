@@ -31,6 +31,7 @@ import com.folioreader.model.event.GoToBookMarkEvent;
 import com.folioreader.model.event.GoToChapterEvent;
 import com.folioreader.model.event.GoToPageEvent;
 import com.folioreader.model.event.JumpToBookmarkPage;
+import com.folioreader.model.event.LoadPauseEvent;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.PopulateTOCItems;
 import com.folioreader.ui.folio.adapter.FolioPageFragmentAdapter;
@@ -509,6 +510,22 @@ public class EpubReaderFragment extends Fragment implements TOCMvpView, FolioPag
     @SuppressWarnings("unused")
     @Subscribe
     public void onGoToBookMarkEvent(GoToBookMarkEvent event) {
+        String selectedChapterHref = event.getChapterPosition();
+        for (Link spine : mSpineReferenceList) {
+            if (selectedChapterHref.contains(spine.href)) {
+                mChapterPosition = mSpineReferenceList.indexOf(spine);
+                mFolioPageViewPager.setCurrentItem(mChapterPosition);
+                AppUtil.setComeFromBookmark(true);
+                AppUtil.setCurrentchapterPage(event.getPageNumber());
+                EventBus.getDefault().post(new JumpToBookmarkPage(String.valueOf(mChapterPosition), event.getPageNumber()));
+                break;
+            }
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe
+    public void onLoadPause(LoadPauseEvent event) {
         String selectedChapterHref = event.getChapterPosition();
         for (Link spine : mSpineReferenceList) {
             if (selectedChapterHref.contains(spine.href)) {

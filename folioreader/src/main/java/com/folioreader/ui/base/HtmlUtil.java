@@ -81,16 +81,23 @@ public final class HtmlUtil {
             classes += " nightMode";
         }
 
-        if (config.getFontSize() > 0 && config.getFontSize() < 3) {
-            classes += " textSizeOne";
-        } else if (config.getFontSize() > 3 && config.getFontSize() < 6) {
-            classes += " textSizeTwo";
-        } else if (config.getFontSize() > 7 && config.getFontSize() < 10) {
-            classes += " textSizeThree";
-        } else if (config.getFontSize() > 11 && config.getFontSize() < 14) {
-            classes += " textSizeFour";
-        } else if (config.getFontSize() > 14 && config.getFontSize() < 20) {
-            classes += " textSizeFive";
+        switch (config.getFontSize()){
+            case 1:
+                classes += " textSizeOne";
+                break;
+            case 2:
+                classes += " textSizeTwo";
+                break;
+            case 3:
+                classes += " textSizeThree";
+            case 4:
+                classes += " textSizeFour";
+                break;
+            case 5:
+                classes += " textSizeFive";
+                break;
+            default:
+                break;
         }
 
         htmlContent = htmlContent.replace("<html ", "<html class=\"" + classes + "\" ");
