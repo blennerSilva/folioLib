@@ -25,6 +25,8 @@ public class HorizontalWebView extends WebView {
     private ScrollListener mScrollListener;
     ShowInterfacesControls showInterfacesControls;
     private TouchDetector touchDetector;
+    private boolean touchLeft;
+    private boolean touchRight;
 
     public interface ScrollListener {
         void onScrollChange(int percent);
@@ -179,7 +181,7 @@ public class HorizontalWebView extends WebView {
     }
 
     public void turnPageLeft() {
-        int currentPage = getPageIndex();
+        int currentPage = getPageIndexFromTouch();
         int previousPage = currentPage - getWebviewHeight();
             /*Below condition is to show the first page completely without large padding the content*/
 
@@ -192,7 +194,7 @@ public class HorizontalWebView extends WebView {
     }
 
     private void turnPageRight() {
-        int currentPage = getPageIndex();
+        int currentPage = getPageIndexFromTouch();
         int nextPage = currentPage + getWebviewHeight();
 
         scrollTo(0, nextPage);
@@ -215,9 +217,16 @@ public class HorizontalWebView extends WebView {
         return totalPages;
     }
 
-    private int getPageIndex() {
+    public int getPageIndexFromTouch() {
         //TODO Melhorar essa formular para que aceite inteiros corretamente
-        if (AppUtil.getGetCurrentchapterPage() == 0) {
+        if (AppUtil.getGetCurrentchapterPage() == 0 && getScrollY() != 0) {
+            if (touchRight) {
+                return getScrollY() + getWebviewHeight();
+            } else {
+                return getScrollY() - getWebviewHeight();
+            }
+
+        } else if (AppUtil.getGetCurrentchapterPage() == 0) {
             return getWebviewHeight();
         } else {
             double scrollToPage = (getWebviewHeight() * (AppUtil.getGetCurrentchapterPage() - 1));
@@ -231,6 +240,8 @@ public class HorizontalWebView extends WebView {
             @Override
             public void onTouchEventDetected(View v, TouchDetector.TouchTypeEnum touchType) {
                 if (touchType.equals(TouchDetector.TouchTypeEnum.LEFT_TO_RIGHT)) {
+                    touchRight = false;
+                    touchLeft = true;
                     if (getScrollY() > 0) {
                         turnPageLeft();
                     } else if (getCurrentPage() == 0 && getScrollY() > 0) {
@@ -240,6 +251,8 @@ public class HorizontalWebView extends WebView {
                         AppUtil.setCurrentchapterPage(0);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.RIGHT_TO_LEFT)) {
+                    touchRight = true;
+                    touchLeft = false;
 
                     if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
                         turnPageRight();
@@ -248,6 +261,9 @@ public class HorizontalWebView extends WebView {
                         AppUtil.setCurrentchapterPage(0);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_LEFT)) {
+                    touchRight = false;
+                    touchLeft = true;
+
                     if (getScrollY() > 0) {
                         turnPageLeft();
                     } else if (getCurrentPage() == 0 && getScrollY() > 0) {
@@ -257,6 +273,8 @@ public class HorizontalWebView extends WebView {
                         AppUtil.setCurrentchapterPage(0);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_RIGHT)) {
+                    touchRight = true;
+                    touchLeft = false;
 
                     if (AppUtil.getGetCurrentchapterPage() + 1 < getTotalPages()) {
                         turnPageRight();

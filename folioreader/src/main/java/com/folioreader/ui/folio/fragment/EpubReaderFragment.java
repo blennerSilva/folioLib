@@ -363,15 +363,6 @@ public class EpubReaderFragment extends Fragment implements TOCMvpView, FolioPag
 
     @Override
     public void goToChapter(String href) {
-        /*href = href.substring(href.indexOf(bookFileName + "/") + bookFileName.length() + 1);
-        for (Link spine : mSpineReferenceList) {
-            if (spine.href.contains(href)) {
-                mChapterPosition = mSpineReferenceList.indexOf(spine);
-                mFolioPageViewPager.setCurrentItem(mChapterPosition);
-                title.setText(spine.getChapterTitle());
-                break;
-            }
-        }*/
     }
 
     public int getmChapterPosition() {
@@ -442,27 +433,6 @@ public class EpubReaderFragment extends Fragment implements TOCMvpView, FolioPag
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-       /* if (requestCode == ACTION_CONTENT_HIGHLIGHT && resultCode == RESULT_OK && data.hasExtra(TYPE)) {
-
-            String type = data.getStringExtra(TYPE);
-            if (type.equals(CHAPTER_SELECTED)) {
-                String selectedChapterHref = data.getStringExtra(SELECTED_CHAPTER_POSITION);
-                for (Link spine : mSpineReferenceList) {
-                    if (selectedChapterHref.contains(spine.href)) {
-                        mChapterPosition = mSpineReferenceList.indexOf(spine);
-                        mFolioPageViewPager.setCurrentItem(mChapterPosition);
-                        title.setText(data.getStringExtra(Constants.BOOK_TITLE));
-                        EventBus.getDefault().post(new AnchorIdEvent(selectedChapterHref));
-                        break;
-                    }
-                }
-            } else if (type.equals(HIGHLIGHT_SELECTED)) {
-                HighlightImpl highlightImpl = data.getParcelableExtra(HIGHLIGHT_ITEM);
-                int position = highlightImpl.getPageNumber();
-                mFolioPageViewPager.setCurrentItem(position);
-                EventBus.getDefault().post(new WebViewPosition(mSpineReferenceList.get(mChapterPosition).href, highlightImpl.getRangy()));
-            }
-        }*/
     }
 
     @Override

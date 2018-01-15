@@ -72,7 +72,6 @@ import org.readium.r2_streamer.model.publication.link.Link;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -372,8 +371,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             if (ref.contains("OEBPS/Text/")) {
                 path = ref.substring(0, ref.lastIndexOf('/'));
             } else {
-                String pathModified = "OEBPS/Text/" + ref;
-                path = pathModified.substring(0, pathModified.lastIndexOf('/'));
+                path = ref.substring(0, ref.lastIndexOf('/') + 1);
             }
             mWebview.loadDataWithBaseURL(
                     Constants.LOCALHOST + mBookTitle + "/" + path + "/",
@@ -438,9 +436,11 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     mScrollY = mWebview.getScrollY();
                     if (isAdded()) {
                         epubReaderFragment.setLastWebViewPosition(mScrollY);
-                        getPageIndex();
+                        mWebview.getPageIndexFromTouch();
                         updatePagesLeftText(percent);
-                        AppUtil.setCurrentchapterPage(percent);
+
+                        int currentPage = (int) (Math.ceil((double) percent / mWebview.getWebviewHeight()) + 1);
+                        AppUtil.setCurrentchapterPage(currentPage);
                     }
                 }
 
@@ -462,12 +462,11 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                             updatePagesLeftText(0);
                         } else if (AppUtil.isComeFromBookmark()) {
                             setWebViewPosition(AppUtil.getGetCurrentchapterPage());
-                            AppUtil.setComeFromInternalChange(true);
                             AppUtil.setComeFromBookmark(false);
-                            updatePagesLeftText(mScrollY);
+                            updatePagesLeftText(AppUtil.getGetCurrentchapterPage());
                         } else {
-                            setWebViewPosition(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
-                            AppUtil.setCurrentchapterPage(AppUtil.getPreviousBookStateWebViewPosition(getActivity(), mBookTitle));
+                            setWebViewPosition(AppUtil.getGetCurrentchapterPage());
+                            updatePagesLeftText(AppUtil.getGetCurrentchapterPage());
                         }
 
                         pageHasFinishedLoading.pageHasFinishedLoading();
