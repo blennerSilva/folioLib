@@ -187,6 +187,10 @@ public class HorizontalWebView extends WebView {
 
         scrollTo(0, previousPage);
 
+        if (previousPage == 0 || previousPage == getWebviewHeight()) {
+            AppUtil.setCurrentchapterPage(1);
+        }
+
         PAGE_LEFT_COUNT++;
 
         if (PAGE_RIGHT_COUNT > 3)
@@ -248,7 +252,7 @@ public class HorizontalWebView extends WebView {
                         scrollTo(0, 0);
                     } else {
                         epubReaderFragment.loadPrevPage();
-                        AppUtil.setCurrentchapterPage(0);
+                        AppUtil.setCurrentchapterPage(1);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.RIGHT_TO_LEFT)) {
                     touchRight = true;
@@ -258,7 +262,7 @@ public class HorizontalWebView extends WebView {
                         turnPageRight();
                     } else {
                         epubReaderFragment.loadNextPage();
-                        AppUtil.setCurrentchapterPage(0);
+                        AppUtil.setCurrentchapterPage(1);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_LEFT)) {
                     touchRight = false;
@@ -270,7 +274,7 @@ public class HorizontalWebView extends WebView {
                         scrollTo(0, 0);
                     } else {
                         epubReaderFragment.loadPrevPage();
-                        AppUtil.setCurrentchapterPage(0);
+                        AppUtil.setCurrentchapterPage(1);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_RIGHT)) {
                     touchRight = true;
@@ -280,7 +284,7 @@ public class HorizontalWebView extends WebView {
                         turnPageRight();
                     } else {
                         epubReaderFragment.loadNextPage();
-                        AppUtil.setCurrentchapterPage(0);
+                        AppUtil.setCurrentchapterPage(1);
                     }
                 } else if (touchType.equals(TouchDetector.TouchTypeEnum.TAP_CENTER)) {
                     showInterfacesControls.showInterfaceControls();

@@ -395,7 +395,6 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         mWebview.setFragment(epubReaderFragment);
         mWebview.setVerticalScrollBarEnabled(false);
         mWebview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
-        Log.d("CONTENTHEIGHT", "Altura" + mWebview.getContentHeightVal());
 
         if (getActivity() instanceof HorizontalWebView.ToolBarListener)
             mWebview.setToolBarListener((HorizontalWebView.ToolBarListener) getActivity());
@@ -598,10 +597,14 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             totalPages = (int) Math.ceil((double) mWebview.getContentHeightVal() / mWebview.getWebviewHeight());
 
             if (currentPage > totalPages) {
-                currentPage = totalPages;
+                if (totalPages != 0) {
+                    currentPage = totalPages;
+                }
                 AppUtil.setCurrentchapterPage(currentPage);
             } else {
-                AppUtil.setCurrentchapterPage(currentPage);
+                if (currentPage == 0) {
+                    AppUtil.setCurrentchapterPage(1);
+                }
             }
         } catch (java.lang.ArithmeticException exp) {
             Log.d("divide error", exp.toString());
