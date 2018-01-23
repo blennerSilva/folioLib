@@ -235,4 +235,8 @@ public class FolioReader {
     public boolean forceLoadPause() {
         return AppUtil.isComeFromInternalChange();
     }
+
+    public void setForceLoadPause(boolean force) {
+        AppUtil.setComeFromInternalChange(force);
+    }
 }

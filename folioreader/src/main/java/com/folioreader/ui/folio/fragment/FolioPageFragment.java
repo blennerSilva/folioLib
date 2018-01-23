@@ -463,9 +463,15 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                             setWebViewPosition(AppUtil.getGetCurrentchapterPage());
                             AppUtil.setComeFromBookmark(false);
                             updatePagesLeftText(AppUtil.getGetCurrentchapterPage());
+                            AppUtil.setComeFromInternalChange(true);
+                        }else if (AppUtil.isComeFromLoadPause()) {
+                            setWebViewPosition(AppUtil.getGetCurrentchapterPage());
+                            updatePagesLeftText(AppUtil.getGetCurrentchapterPage());
+                            AppUtil.setComeFromInternalChange(false);
                         } else {
                             setWebViewPosition(AppUtil.getGetCurrentchapterPage());
                             updatePagesLeftText(AppUtil.getGetCurrentchapterPage());
+                            AppUtil.setComeFromInternalChange(false);
                         }
 
                         pageHasFinishedLoading.pageHasFinishedLoading();

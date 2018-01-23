@@ -54,6 +54,7 @@ public class AppUtil {
     private static boolean comeFromBookmark = false;
     private static boolean comeFromChapterList = false;
     private static boolean comeFromInternalChange = false;
+    private static boolean comeFromLoadPause = false;
 
     private enum FileType {
         OPS,
@@ -338,6 +339,14 @@ public class AppUtil {
 
     public static void setComeFromInternalChange(boolean comeFromInternalChange) {
         AppUtil.comeFromInternalChange = comeFromInternalChange;
+    }
+
+    public static boolean isComeFromLoadPause() {
+        return comeFromLoadPause;
+    }
+
+    public static void setComeFromLoadPause(boolean comeFromLoadPause) {
+        AppUtil.comeFromLoadPause = comeFromLoadPause;
     }
 }
 

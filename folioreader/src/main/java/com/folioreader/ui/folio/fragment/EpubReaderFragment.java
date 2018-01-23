@@ -501,7 +501,7 @@ public class EpubReaderFragment extends Fragment implements TOCMvpView, FolioPag
             if (selectedChapterHref.contains(spine.href)) {
                 mChapterPosition = mSpineReferenceList.indexOf(spine);
                 mFolioPageViewPager.setCurrentItem(mChapterPosition);
-                AppUtil.setComeFromBookmark(true);
+                AppUtil.setComeFromLoadPause(true);
                 AppUtil.setCurrentchapterPage(event.getPageNumber());
                 EventBus.getDefault().post(new JumpToBookmarkPage(String.valueOf(mChapterPosition), event.getPageNumber()));
                 break;
